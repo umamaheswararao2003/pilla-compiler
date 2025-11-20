@@ -1,0 +1,50 @@
+#include "semantics/Semantics.h"
+#include <iostream>
+
+bool Semantics::analyze(ProgramAST& program) {
+    hasError = false;
+    program.accept(*this);
+    return !hasError;
+}
+
+void Semantics::error(const std::string& message) {
+    std::cerr << "[Semantic Error] " << message << std::endl;
+    hasError = true;
+}
+
+long Semantics::visit(ProgramAST& node) {
+    node.function->accept(*this);
+    return 0;
+}
+
+long Semantics::visit(FunctionAST& node) {
+    // In the future, we would check if the function name is already defined
+    // and if the body returns the correct type (e.g., int).
+    node.body->accept(*this);
+    return 0;
+}
+
+long Semantics::visit(ReturnStmtAST& node) {
+    // Check the expression inside the return statement
+    node.expression->accept(*this);
+    return 0;
+}
+
+long Semantics::visit(BinaryExprAST& node) {
+    // 1. Visit left and right children to ensure they are valid
+    node.left->accept(*this);
+    node.right->accept(*this);
+
+    // 2. Type Checking Logic
+    // Since our language ONLY has integers right now, this is simple.
+    // But this is where you would put logic like:
+    // if (leftType != rightType) error("Type mismatch!");
+    
+    // For now, we assume everything is an integer.
+    return 0; 
+}
+
+long Semantics::visit(NumberExprAST& node) {
+    // Numbers are always valid in our current language
+    return 0; 
+}

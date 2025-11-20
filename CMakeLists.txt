@@ -1,0 +1,28 @@
+# Set the minimum required version of CMake
+cmake_minimum_required(VERSION 3.10)
+
+# Set the project name
+project(pilla-compiler CXX)
+
+# Set the C++ standard (e.g., C++17)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+# Add the executable target.
+# It's built from all the .cpp files in the src directory.
+add_executable(pilla-compiler
+    src/main.cpp
+    src/lexer/Lexer.cpp
+    src/lexer/Token.cpp
+    src/parser/Parser.cpp
+    src/sema/Sema.cpp
+    src/parser/ASTPrinter.cpp
+)
+
+# Tell CMake to look for header files in the 'include' directory
+target_include_directories(pilla-compiler PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Optional: Enable warnings
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
+    target_compile_options(pilla-compiler PRIVATE -Wall -Wextra -Wpedantic)
+endif()
