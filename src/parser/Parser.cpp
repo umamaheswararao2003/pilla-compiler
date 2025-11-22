@@ -6,10 +6,12 @@ Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens) {}
 
 // main entry point 
 std::unique_ptr<ProgramAST> Parser::parse() {
+    std::vector<std::unique_ptr<FunctionAST>> functions;
     try{
-        // for now only one function
-        auto function = parseFunction();
-        return std::make_unique<ProgramAST>(std::move(function));
+        while (!isAtEnd()) {
+            functions.push_back(parseFunction());
+        }
+        return std::make_unique<ProgramAST>(std::move(functions));
     } catch(const std::exception& e) {
         std::cerr << "erroe :" << e.what() << std::endl;
         return nullptr;
@@ -20,31 +22,54 @@ std::unique_ptr<ProgramAST> Parser::parse() {
 
 std::unique_ptr<FunctionAST> Parser::parseFunction() {
     consume(Tokentype::KW_INT, "expected 'int' .");
+    std::string returnType = "int"; // Currently only int supported
+
     Token name = consume(Tokentype::IDENTIFIER, "expected function name.");
     consume(Tokentype::LPAR,"Expected '('.");
-    consume(Tokentype::RPAR,"Expected ')'.");
-    consume(Tokentype::LBRACE,"Expected '{'.");
 
-    // foe now only one statement to parse
-    auto body = parseStatement();
-
-    consume(Tokentype::RBRACE, "Expected '}'.");
-
-    if(!isAtEnd()) {
-        throw std::runtime_error("expected end of the file after function");
+    std::vector<std::pair<std::string, std::string>> parameters;
+    if (!match(Tokentype::RPAR)) {
+        do {
+            consume(Tokentype::KW_INT, "Expected parameter type 'int'.");
+            Token paramName = consume(Tokentype::IDENTIFIER, "Expected parameter name.");
+            parameters.push_back({"int", paramName.lexeme});
+        } while (match(Tokentype::COMMA));
+        consume(Tokentype::RPAR, "Expected ')'.");
     }
 
-    return std::make_unique<FunctionAST>(name.lexeme, std::move(body));
+    consume(Tokentype::LBRACE,"Expected '{'.");
+
+    std::vector<std::unique_ptr<StmtAST>> body;
+    while (!match(Tokentype::RBRACE) && !isAtEnd()) {
+        body.push_back(parseStatement());
+    }
+
+    return std::make_unique<FunctionAST>(returnType, name.lexeme, std::move(parameters), std::move(body));
 }
 
 // base for parsing statements
 
 std::unique_ptr<StmtAST> Parser::parseStatement() {
+    // variable declaration
+    if (peek().type == Tokentype::KW_INT) {
+        return parseVariableDecl();
+    }
     //return
     if (peek().type == Tokentype::KW_RETURN) {
         return parseReturnStatement();
     }
-    throw std::runtime_error("expected a 'return' statement");
+    throw std::runtime_error("expected a statement");
+}
+
+std::unique_ptr<VariableDeclAST> Parser::parseVariableDecl() {
+    consume(Tokentype::KW_INT, "Expected 'int'.");
+    Token name = consume(Tokentype::IDENTIFIER, "Expected variable name.");
+    std::unique_ptr<ExprAST> initializer = nullptr;
+    if (match(Tokentype::ASSIGN)) {
+        initializer = parseExpression();
+    }
+    consume(Tokentype::SEMICOLON, "Expected ';' after variable declaration.");
+    return std::make_unique<VariableDeclAST>("int", name.lexeme, std::move(initializer));
 }
 
 std::unique_ptr<ReturnStmtAST> Parser::parseReturnStatement() {
@@ -82,7 +107,25 @@ std::unique_ptr<ExprAST> Parser::parsePrimary() {
         return std::make_unique<NumberExprAST>(value);
     }
 
-    throw std::runtime_error(" expected a number" + previous().lexeme);
+    if (match(Tokentype::IDENTIFIER)) {
+        std::string name = previous().lexeme;
+        if (match(Tokentype::LPAR)) {
+            // Function call
+            std::vector<std::unique_ptr<ExprAST>> args;
+            if (!match(Tokentype::RPAR)) {
+                do {
+                    args.push_back(parseExpression());
+                } while (match(Tokentype::COMMA));
+                consume(Tokentype::RPAR, "Expected ')' after arguments.");
+            }
+            return std::make_unique<CallExprAST>(name, std::move(args));
+        } else {
+            // Variable usage
+            return std::make_unique<VariableExprAST>(name);
+        }
+    }
+
+    throw std::runtime_error(" expected expression, found " + peek().lexeme);
 }
 
 

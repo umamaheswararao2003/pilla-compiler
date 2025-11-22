@@ -7,7 +7,7 @@
 enum class Tokentype {
     // single character
     LPAR, RPAR,LBRACE, RBRACE,LESS_THAN,
-    GRE_THAN, SEMICOLON, PLUS, POUND,
+    GRE_THAN, SEMICOLON, PLUS, POUND,ASSIGN, COMMA,
 
     // NUMBERS AND NAMES
     NUMBER, IDENTIFIER,

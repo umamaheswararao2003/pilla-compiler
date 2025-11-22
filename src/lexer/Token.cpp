@@ -9,6 +9,8 @@ namespace {
         {Tokentype::LPAR, "LPAR"},
         {Tokentype::RPAR, "RPAR"},
         {Tokentype::LBRACE, "LBRACE"},
+        {Tokentype::ASSIGN, "ASSIGN"},
+        {Tokentype::COMMA, "COMMA"},
         {Tokentype::RBRACE, "RBRACE"},
         {Tokentype::LESS_THAN, "LESS_THAN"},
         {Tokentype::GRE_THAN, "GRE_THAN"},

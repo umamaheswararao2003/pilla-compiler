@@ -1,5 +1,9 @@
-
-int main() {
-    return 23 + 4 + 2;
+int sum(int a, int b) {
+  return a + b;
 }
 
+int main() {
+  int a =10;
+  int b =2;
+  return sum(a,b);
+}

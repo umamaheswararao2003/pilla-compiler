@@ -7,7 +7,7 @@
 #include <vector>
 #include <optional>
 #include <memory>
-
+#include <utility>
 
 enum class Type { Int, Invalid};
 
@@ -49,9 +49,25 @@ class NumberExprAST : public ExprAST {
     long accept(ASTVisitor& visitor) override;
 };
 
+// variable usage
+class VariableExprAST : public ExprAST {
+    public:
+    std::string name;
+    VariableExprAST(const std::string& name) : name(name) {}
+    long accept(ASTVisitor& visitor) override;
+};
+
+// function call
+class CallExprAST : public ExprAST {
+    public:
+    std::string callee;
+    std::vector<std::unique_ptr<ExprAST>> args;
+    CallExprAST(const std::string& callee, std::vector<std::unique_ptr<ExprAST>> args)
+        : callee(callee), args(std::move(args)) {}
+    long accept(ASTVisitor& visitor) override;
+};
 
 // binary 
-
 class BinaryExprAST : public ExprAST {
     public:
     Tokentype op;
@@ -65,6 +81,17 @@ class BinaryExprAST : public ExprAST {
 
 // statement nodes
 
+// variable declaration
+class VariableDeclAST : public StmtAST {
+    public:
+    std::string type;
+    std::string name;
+    std::unique_ptr<ExprAST> initializer;
+    VariableDeclAST(const std::string& type, const std::string& name, std::unique_ptr<ExprAST> init)
+        : type(type), name(name), initializer(std::move(init)) {}
+    long accept(ASTVisitor& visitor) override;
+};
+
 //node for return 
 class ReturnStmtAST : public StmtAST {
     public:
@@ -77,11 +104,15 @@ class ReturnStmtAST : public StmtAST {
 
 class FunctionAST {
     public:
+    std::string returnType;
     std::string name;
-    std::unique_ptr<StmtAST> body;
+    std::vector<std::pair<std::string, std::string>> parameters; // type, name
+    std::vector<std::unique_ptr<StmtAST>> body;
 
-    FunctionAST(const std::string& name, std::unique_ptr<StmtAST> body)
-        : name(name), body(std::move(body)) {}
+    FunctionAST(const std::string& returnType, const std::string& name, 
+                std::vector<std::pair<std::string, std::string>> params,
+                std::vector<std::unique_ptr<StmtAST>> body)
+        : returnType(returnType), name(name), parameters(std::move(params)), body(std::move(body)) {}
         
     long accept(ASTVisitor& visitor);
 };
@@ -89,10 +120,10 @@ class FunctionAST {
 // node for full program 
 class ProgramAST {
     public:
-    std::unique_ptr<FunctionAST> function;
+    std::vector<std::unique_ptr<FunctionAST>> functions;
 
-    ProgramAST(std::unique_ptr<FunctionAST> func)
-        : function(std::move(func)) {}
+    ProgramAST(std::vector<std::unique_ptr<FunctionAST>> funcs)
+        : functions(std::move(funcs)) {}
 
     long accept(ASTVisitor& visitor);
 };
@@ -103,8 +134,11 @@ class ASTVisitor {
     virtual ~ASTVisitor() = default;
     virtual long visit(ProgramAST& node) = 0;
     virtual long visit(FunctionAST& node) = 0;
+    virtual long visit(VariableDeclAST& node) = 0;
     virtual long visit(ReturnStmtAST& node) = 0;
     virtual long visit(NumberExprAST& node) = 0;
+    virtual long visit(VariableExprAST& node) = 0;
+    virtual long visit(CallExprAST& node) = 0;
     virtual long visit(BinaryExprAST& node) = 0;
 };
 
@@ -118,6 +152,10 @@ inline long FunctionAST::accept(ASTVisitor& visitor) {
     return visitor.visit(*this);
 }
 
+inline long VariableDeclAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
 inline long ReturnStmtAST::accept(ASTVisitor& visitor) {
     return visitor.visit(*this);
 }
@@ -126,9 +164,16 @@ inline long NumberExprAST::accept(ASTVisitor& visitor) {
     return visitor.visit(*this);
 }
 
-inline long BinaryExprAST::accept(ASTVisitor& visitor) {
+inline long VariableExprAST::accept(ASTVisitor& visitor) {
     return visitor.visit(*this);
 }
 
+inline long CallExprAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
+inline long BinaryExprAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
 
 #endif //PILLA_AST_H

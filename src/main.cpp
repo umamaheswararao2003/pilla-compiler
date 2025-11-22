@@ -54,19 +54,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    std::cout << "✓ AST constructed successfully!" << std::endl;
+    std::cout << "\n ✓ AST constructed successfully!" << std::endl;
 
     // ===== AST VISUALIZATION =====
     ASTPrinter printer;
     printer.print(*ast);
 
-    std::cout << "\n✓ Compilation completed successfully!" << std::endl;
 
-    Semantics sema; // CHANGED
+    Semantics sema;
     if (!sema.analyze(*ast))
-    {                                                 // CHANGED
-        std::cerr << "✗ Semantic analysis failed!\n"; // CHANGED
-        return 1;                                     // CHANGED
+    {                                                
+        std::cerr << "✗ Semantic analysis failed!\n"; 
+        return 1;                                     
     }
     std::cout << "✓ Semantic analysis passed!\n";
 

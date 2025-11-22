@@ -36,6 +36,8 @@ Token Lexer::scanToken() {
         case '#': return makeToken(Tokentype::POUND, "#");
         case '<': return makeToken(Tokentype::LESS_THAN, "<");
         case '>': return makeToken(Tokentype::GRE_THAN, ">");
+        case '=': return makeToken(Tokentype::ASSIGN, "=");
+        case ',': return makeToken(Tokentype::COMMA, ",");
     }
 
     // Check for numbers

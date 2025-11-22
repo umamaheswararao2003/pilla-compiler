@@ -29,6 +29,9 @@ class Parser {
     // parse statement
     std::unique_ptr<StmtAST> parseStatement();
 
+    // parse variable declaration
+    std::unique_ptr<VariableDeclAST> parseVariableDecl();
+
     // parse return statement
     std::unique_ptr<ReturnStmtAST> parseReturnStatement();
 
