@@ -2,6 +2,7 @@
 #include "parser/Parser.h"
 #include "parser/ASTPrinter.h"
 #include "sema/Sema.h"
+#include "codegen/Codegen.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -68,6 +69,11 @@ int main(int argc, char *argv[])
         return 1;                                     
     }
     std::cout << "✓ Semantic analysis passed!\n";
+
+    // ===== CODE GENERATION =====
+    std::cout << "\n--- Generating LLVM IR ---\n";
+    Codegen codegen;
+    codegen.generate(*ast);
 
     return 0;
 }
