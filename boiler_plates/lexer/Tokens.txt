@@ -1,0 +1,51 @@
+tokens.h :
+
+enum class tokentypes { };
+
+- function to convrt token types to string 
+ std::string tokenTypeToString(Tokentype type);
+
+- a struct for representing each token 
+struct Token {
+    tokentypes type;
+    std::string lexeme;
+};
+
+tokens.cpp : 
+
+tokens to string 
+
+ std::map<Tokentype, std::string> tokenTypeStrings = {
+        {Tokentype::LPAR, "LPAR"},
+        {Tokentype::RPAR, "RPAR"},
+        {Tokentype::LBRACE, "LBRACE"},
+        {Tokentype::ASSIGN, "ASSIGN"},
+        {Tokentype::COMMA, "COMMA"},
+        {Tokentype::RBRACE, "RBRACE"},
+        {Tokentype::LESS_THAN, "LESS_THAN"},
+        {Tokentype::GRE_THAN, "GRE_THAN"},
+        {Tokentype::SEMICOLON, "SEMICOLON"},
+        {Tokentype::PLUS, "PLUS"},
+        {Tokentype::POUND, "POUND"},
+        {Tokentype::NUMBER, "NUMBER"},
+        {Tokentype::IDENTIFIER, "IDENTIFIER"},
+        {Tokentype::KW_INT, "KW_INT"},
+        {Tokentype::KW_RETURN, "KW_RETURN"},
+        {Tokentype::KW_INCLUDE, "KW_INCLUDE"},
+        {Tokentype::UNKNOWN, "UNKNOWN"},
+        {Tokentype::E_O_F, "EOF"}
+    };
+
+function to actually do it 
+
+std::string tokenTypeToString(Tokentype type) {
+    try{
+        return tokenTypeStrings.at(type);
+    } catch (const std::out_of_range&) {
+        return "INVALID_RA_BABU";
+    }
+}
+
+
+
+

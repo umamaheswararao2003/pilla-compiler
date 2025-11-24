@@ -5,5 +5,6 @@ int sum(int a, int b) {
 int main() {
   int a =10;
   int b =2;
-  return sum(a,b);
+  int c = sum(a,b);
+  return 0;
 }
