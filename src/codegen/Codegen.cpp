@@ -87,7 +87,8 @@ long Codegen::visit(ReturnStmtAST& node) {
              builder->CreateRet(llvm::ConstantInt::get(*context, llvm::APInt(64, 0)));
         }
     } else {
-        builder->CreateRetVoid(); // Or return 0 if int function
+        // Or return 0 if int function
+        builder->CreateRetVoid(); 
     }
     return 0;
 }

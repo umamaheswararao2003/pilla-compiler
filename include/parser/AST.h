@@ -106,7 +106,7 @@ class FunctionAST {
     public:
     std::string returnType;
     std::string name;
-    std::vector<std::pair<std::string, std::string>> parameters; // type, name
+    std::vector<std::pair<std::string, std::string>> parameters; 
     std::vector<std::unique_ptr<StmtAST>> body;
 
     FunctionAST(const std::string& returnType, const std::string& name, 
