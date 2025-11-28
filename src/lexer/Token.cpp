@@ -21,7 +21,6 @@ namespace {
         {Tokentype::IDENTIFIER, "IDENTIFIER"},
         {Tokentype::KW_INT, "KW_INT"},
         {Tokentype::KW_RETURN, "KW_RETURN"},
-        {Tokentype::KW_INCLUDE, "KW_INCLUDE"},
         {Tokentype::UNKNOWN, "UNKNOWN"},
         {Tokentype::E_O_F, "EOF"}
     };

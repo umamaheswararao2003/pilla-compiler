@@ -11,6 +11,8 @@
 #include <map>
 #include <memory>
 
+#include "llvm/IR/LegacyPassManager.h"
+
 class Codegen : public ASTVisitor {
 public:
     Codegen();
@@ -30,6 +32,7 @@ private:
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::Module> module;
     std::unique_ptr<llvm::IRBuilder<>> builder;
+    std::unique_ptr<llvm::legacy::FunctionPassManager> fpm;
     std::map<std::string, llvm::Value*> namedValues;
     llvm::Value* lastValue = nullptr;
 

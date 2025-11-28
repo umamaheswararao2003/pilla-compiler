@@ -19,6 +19,7 @@ long Semantics::visit(ProgramAST& node) {
     for (const auto& func : node.functions) {
         std::vector<Type> paramTypes;
         for (const auto& param : func->parameters) {
+            (void)param;
             paramTypes.push_back(Type::Int); 
         }
         declareFunction(func->name, Type::Int, paramTypes);

@@ -1,48 +1,10 @@
-#ifndef PILLA_CODEGEN_H
-#define PILLA_CODEGEN_H
+int sum(int a, int b, int c) {
+  return a + b + c;
+}
 
-#include "parser/AST.h"
-#include "llvm/IR/Value.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/LLVMContext.h"
-#include <map>
-#include <string>
-#include <vector>
-
-// Define a type alias for a variable/value entry in our symbol table
-struct VariableEntry {
-    llvm::Value* value;
-    Type type; // Use your existing Type enum (Int, Invalid)
-};
-
-class CodegenVisitor : public ASTVisitor {
-    llvm::LLVMContext& Context;
-    llvm::IRBuilder<> Builder;
-    std::unique_ptr<llvm::Module> TheModule;
-
-    // Simple symbol table for variables (handling simple function scope here)
-    std::map<std::string, VariableEntry> NamedValues;
-
-    // Helper to get LLVM Type from your custom Type enum
-    llvm::Type* getLLVMType(Type type);
-
-public:
-    CodegenVisitor(llvm::LLVMContext& ctx);
-
-    // Main entry point for code generation
-    bool generate(ProgramAST& program);
-    llvm::Module* getModule() const { return TheModule.get(); }
-
-    // Visitor methods (returning llvm::Value* cast to long)
-    long visit(ProgramAST& node) override;
-    long visit(FunctionAST& node) override;
-    long visit(VariableDeclAST& node) override;
-    long visit(ReturnStmtAST& node) override;
-    long visit(NumberExprAST& node) override;
-    long visit(VariableExprAST& node) override;
-    long visit(CallExprAST& node) override;
-    long visit(BinaryExprAST& node) override;
-};
-
-#endif // PILLA_CODEGEN_H
+int main() {
+  int a =10;
+  int b = 4 + 16;
+  int c = sum(a, b, 10);
+  return c;
+}

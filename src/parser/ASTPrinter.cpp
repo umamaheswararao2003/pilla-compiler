@@ -10,7 +10,7 @@ void ASTPrinter::print(ProgramAST& program) {
     std::cout << "=========================" << std::endl;
 }
 
-void ASTPrinter::printIndent(bool last) {
+void ASTPrinter::printIndent(bool /*last*/) {
     for (int i = 0; i < indentLevel; i++) {
         std::cout << "  ";
     }
@@ -25,7 +25,7 @@ void ASTPrinter::printNode(const std::string& nodeName, const std::string& value
     }
 }
 
-void ASTPrinter::increaseIndent(bool last) {
+void ASTPrinter::increaseIndent(bool /*last*/) {
     indentLevel++;
 }
 

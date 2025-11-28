@@ -112,7 +112,6 @@ Token Lexer::identifier() {
     //check if keyword
     if (idLexeme == "int") return makeToken(Tokentype::KW_INT, idLexeme);
     if (idLexeme == "return") return makeToken(Tokentype::KW_RETURN, idLexeme);
-    if (idLexeme == "include") return makeToken(Tokentype::KW_INCLUDE, idLexeme);
     
     // It's a regular identifier
     return makeToken(Tokentype::IDENTIFIER, idLexeme);
