@@ -6,7 +6,18 @@ bool Semantics::analyze(ProgramAST& program) {
     functions.clear();
     scopes.clear();
     program.accept(*this);
+    program.accept(*this);
     return !hasError;
+}
+
+Type stringToType(const std::string& typeName) {
+    if (typeName == "int") return Type::Int;
+    if (typeName == "float") return Type::Float;
+    if (typeName == "double") return Type::Double;
+    if (typeName == "char") return Type::Char;
+    if (typeName == "string") return Type::String;
+    if (typeName == "void") return Type::Void;
+    return Type::Invalid;
 }
 
 void Semantics::error(const std::string& message) {
@@ -19,10 +30,9 @@ long Semantics::visit(ProgramAST& node) {
     for (const auto& func : node.functions) {
         std::vector<Type> paramTypes;
         for (const auto& param : func->parameters) {
-            (void)param;
-            paramTypes.push_back(Type::Int); 
+            paramTypes.push_back(stringToType(param.first)); 
         }
-        declareFunction(func->name, Type::Int, paramTypes);
+        declareFunction(func->name, stringToType(func->returnType), paramTypes);
     }
 
     // Second pass: analyze function bodies
@@ -33,12 +43,12 @@ long Semantics::visit(ProgramAST& node) {
 }
 
 long Semantics::visit(FunctionAST& node) {
-    currentReturntype = Type::Int; 
+    currentReturntype = stringToType(node.returnType); 
     enterScope();
     
     // Declare parameters in scope
     for (const auto& param : node.parameters) {
-        declareVariable(param.second, Type::Int);
+        declareVariable(param.second, stringToType(param.first));
     }
     
     for (const auto& stmt : node.body) {
@@ -50,11 +60,19 @@ long Semantics::visit(FunctionAST& node) {
 }
 
 long Semantics::visit(VariableDeclAST& node) {
+    Type varType = stringToType(node.type);
     if (node.initializer) {
         node.initializer->accept(*this);
-        // Check initializer type (assuming int for now)
+        // Check initializer type 
+        if (node.initializer->inferredType != varType) {
+             // Allow implicit conversion int <-> float for now or error?
+             // For strictness, error. But let's allow int -> float.
+             if (!(varType == Type::Float && node.initializer->inferredType == Type::Int)) {
+                 // error("Type mismatch in variable initialization");
+             }
+        }
     }
-    declareVariable(node.name, Type::Int);
+    declareVariable(node.name, varType);
     return 0;
 }
 
@@ -67,13 +85,33 @@ long Semantics::visit(ReturnStmtAST& node) {
 long Semantics::visit(BinaryExprAST& node) {
     node.left->accept(*this);
     node.right->accept(*this);
-    node.inferredType = Type::Int;
+    
+    if (node.left->inferredType == Type::Float || node.right->inferredType == Type::Float) {
+        node.inferredType = Type::Float;
+    } else {
+        node.inferredType = Type::Int;
+    }
     return 0; 
 }
 
 long Semantics::visit(NumberExprAST& node) {
     node.inferredType = Type::Int;
     return 0; 
+}
+
+long Semantics::visit(FloatExprAST& node) {
+    node.inferredType = Type::Float;
+    return 0;
+}
+
+long Semantics::visit(StringExprAST& node) {
+    node.inferredType = Type::String;
+    return 0;
+}
+
+long Semantics::visit(CharExprAST& node) {
+    node.inferredType = Type::Char;
+    return 0;
 }
 
 long Semantics::visit(VariableExprAST& node) {

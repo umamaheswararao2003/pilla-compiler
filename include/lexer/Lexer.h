@@ -17,6 +17,10 @@ class Lexer {
     private:
     std::string sourcecode;
     size_t currentPos;
+    int line;
+    int column;
+    int tokenStartLine;
+    int tokenStartColumn;
 
     // -- helpers methods ---
 
@@ -35,8 +39,14 @@ class Lexer {
     // skips over white spaces 
     void skipWhitespace();
 
-    // number literal
+    // number literal (int or float)
     Token number();
+
+    // string literal
+    Token string();
+
+    // character literal
+    Token character();
 
     // scan identifier or a literal 
     Token identifier();

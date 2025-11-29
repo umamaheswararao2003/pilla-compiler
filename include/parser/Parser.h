@@ -44,6 +44,9 @@ class Parser {
     // parse primary expression 
     std::unique_ptr<ExprAST> parsePrimary();
 
+    // parse type
+    std::string parseType();
+
     // -----some utility functions
 
     // does token match the expected type 

@@ -38,6 +38,16 @@ llvm::Value* Codegen::logError(const char* str) {
     return nullptr;
 }
 
+llvm::Type* Codegen::getLLVMType(const std::string& typeName) {
+    if (typeName == "int") return llvm::Type::getInt64Ty(*context);
+    if (typeName == "float") return llvm::Type::getDoubleTy(*context); // Use double for float for simplicity or float
+    if (typeName == "double") return llvm::Type::getDoubleTy(*context);
+    if (typeName == "char") return llvm::Type::getInt8Ty(*context);
+    if (typeName == "string") return llvm::Type::getInt8PtrTy(*context);
+    if (typeName == "void") return llvm::Type::getVoidTy(*context);
+    return llvm::Type::getInt64Ty(*context); // Default
+}
+
 long Codegen::visit(ProgramAST& node) {
     for (auto& func : node.functions) {
         func->accept(*this);
@@ -47,8 +57,13 @@ long Codegen::visit(ProgramAST& node) {
 
 long Codegen::visit(FunctionAST& node) {
     //  Define function signature
-    std::vector<llvm::Type*> paramTypes(node.parameters.size(), llvm::Type::getInt64Ty(*context));
-    llvm::FunctionType* funcType = llvm::FunctionType::get(llvm::Type::getInt64Ty(*context), paramTypes, false);
+    std::vector<llvm::Type*> paramTypes;
+    for (const auto& param : node.parameters) {
+        paramTypes.push_back(getLLVMType(param.first));
+    }
+    
+    llvm::Type* retType = getLLVMType(node.returnType);
+    llvm::FunctionType* funcType = llvm::FunctionType::get(retType, paramTypes, false);
     
     llvm::Function* function = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, node.name, module.get());
     
@@ -63,7 +78,7 @@ long Codegen::visit(FunctionAST& node) {
         arg.setName(node.parameters[idx].second);
         
         // Create alloca for argument 
-        llvm::AllocaInst* alloca = builder->CreateAlloca(llvm::Type::getInt64Ty(*context), nullptr, arg.getName());
+        llvm::AllocaInst* alloca = builder->CreateAlloca(getLLVMType(node.parameters[idx].first), nullptr, arg.getName());
         builder->CreateStore(&arg, alloca);
         
         namedValues[std::string(arg.getName())] = alloca;
@@ -79,7 +94,7 @@ long Codegen::visit(FunctionAST& node) {
     llvm::verifyFunction(*function);
 
     // 6. Optimize function
-    fpm->run(*function);
+     //fpm->run(*function);
     
     return 0;
 }
@@ -87,7 +102,7 @@ long Codegen::visit(FunctionAST& node) {
 long Codegen::visit(VariableDeclAST& node) {
     llvm::Function* function = builder->GetInsertBlock()->getParent();
     llvm::IRBuilder<> tmpBuilder(&function->getEntryBlock(), function->getEntryBlock().begin());
-    llvm::AllocaInst* alloca = tmpBuilder.CreateAlloca(llvm::Type::getInt64Ty(*context), nullptr, node.name);
+    llvm::AllocaInst* alloca = tmpBuilder.CreateAlloca(getLLVMType(node.type), nullptr, node.name);
     
     if (node.initializer) {
         node.initializer->accept(*this);
@@ -129,7 +144,15 @@ long Codegen::visit(VariableExprAST& node) {
         return 0;
     }
     // Load the value from the alloca
-    lastValue = builder->CreateLoad(llvm::Type::getInt64Ty(*context), v, node.name.c_str());
+    // We need to know the type to load. 
+    // For now, we can get the type from the alloca instruction itself.
+    llvm::AllocaInst* alloca = llvm::dyn_cast<llvm::AllocaInst>(v);
+    if (alloca) {
+        lastValue = builder->CreateLoad(alloca->getAllocatedType(), v, node.name.c_str());
+    } else {
+         // Should not happen if we only store allocas
+         lastValue = v;
+    }
     return 0;
 }
 
@@ -169,14 +192,47 @@ long Codegen::visit(BinaryExprAST& node) {
         return 0;
     }
     
-    switch (node.op) {
-        case Tokentype::PLUS:
-            lastValue = builder->CreateAdd(L, R, "addtmp");
-            break;
-        default:
-            logError("invalid binary operator");
-            lastValue = nullptr;
-            break;
+    bool isFloat = L->getType()->isDoubleTy() || R->getType()->isDoubleTy();
+    
+    if (isFloat) {
+        // Cast 
+        if (!L->getType()->isDoubleTy()) L = builder->CreateSIToFP(L, llvm::Type::getDoubleTy(*context), "casttmp");
+        if (!R->getType()->isDoubleTy()) R = builder->CreateSIToFP(R, llvm::Type::getDoubleTy(*context), "casttmp");
+        
+        switch (node.op) {
+            case Tokentype::PLUS:
+                lastValue = builder->CreateFAdd(L, R, "addtmp");
+                break;
+            default:
+                logError("invalid binary operator");
+                lastValue = nullptr;
+                break;
+        }
+    } else {
+        switch (node.op) {
+            case Tokentype::PLUS:
+                lastValue = builder->CreateAdd(L, R, "addtmp");
+                break;
+            default:
+                logError("invalid binary operator");
+                lastValue = nullptr;
+                break;
+        }
     }
+    return 0;
+}
+
+long Codegen::visit(FloatExprAST& node) {
+    lastValue = llvm::ConstantFP::get(*context, llvm::APFloat(node.value));
+    return 0;
+}
+
+long Codegen::visit(StringExprAST& node) {
+    lastValue = builder->CreateGlobalStringPtr(node.value);
+    return 0;
+}
+
+long Codegen::visit(CharExprAST& node) {
+    lastValue = llvm::ConstantInt::get(*context, llvm::APInt(8, node.value));
     return 0;
 }

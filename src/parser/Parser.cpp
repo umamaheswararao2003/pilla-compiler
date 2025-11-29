@@ -21,8 +21,7 @@ std::unique_ptr<ProgramAST> Parser::parse() {
 // grammar parsing methods 
 
 std::unique_ptr<FunctionAST> Parser::parseFunction() {
-    consume(Tokentype::KW_INT, "expected 'int' .");
-    std::string returnType = "int"; // Currently only int supported
+    std::string returnType = parseType();
 
     Token name = consume(Tokentype::IDENTIFIER, "expected function name.");
     consume(Tokentype::LPAR,"Expected '('.");
@@ -30,9 +29,9 @@ std::unique_ptr<FunctionAST> Parser::parseFunction() {
     std::vector<std::pair<std::string, std::string>> parameters;
     if (!match(Tokentype::RPAR)) {
         do {
-            consume(Tokentype::KW_INT, "Expected parameter type 'int'.");
+            std::string paramType = parseType();
             Token paramName = consume(Tokentype::IDENTIFIER, "Expected parameter name.");
-            parameters.push_back({"int", paramName.lexeme});
+            parameters.push_back({paramType, paramName.lexeme});
         } while (match(Tokentype::COMMA));
         consume(Tokentype::RPAR, "Expected ')'.");
     }
@@ -51,7 +50,11 @@ std::unique_ptr<FunctionAST> Parser::parseFunction() {
 
 std::unique_ptr<StmtAST> Parser::parseStatement() {
     // variable declaration
-    if (peek().type == Tokentype::KW_INT) {
+    // Check if current token is a type keyword
+    Tokentype type = peek().type;
+    if (type == Tokentype::KW_INT || type == Tokentype::KW_FLOAT || 
+        type == Tokentype::KW_DOUBLE || type == Tokentype::KW_CHAR || 
+        type == Tokentype::KW_STRING) {
         return parseVariableDecl();
     }
     //return
@@ -62,14 +65,14 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
 }
 
 std::unique_ptr<VariableDeclAST> Parser::parseVariableDecl() {
-    consume(Tokentype::KW_INT, "Expected 'int'.");
+    std::string type = parseType();
     Token name = consume(Tokentype::IDENTIFIER, "Expected variable name.");
     std::unique_ptr<ExprAST> initializer = nullptr;
     if (match(Tokentype::ASSIGN)) {
         initializer = parseExpression();
     }
     consume(Tokentype::SEMICOLON, "Expected ';' after variable declaration.");
-    return std::make_unique<VariableDeclAST>("int", name.lexeme, std::move(initializer));
+    return std::make_unique<VariableDeclAST>(type, name.lexeme, std::move(initializer));
 }
 
 std::unique_ptr<ReturnStmtAST> Parser::parseReturnStatement() {
@@ -105,6 +108,22 @@ std::unique_ptr<ExprAST> Parser::parsePrimary() {
         // convert the number to a long
         long value = std::stol(previous().lexeme);
         return std::make_unique<NumberExprAST>(value);
+    }
+
+    if(match(Tokentype::FLOAT_LITERAL)) {
+        double value = std::stod(previous().lexeme);
+        return std::make_unique<FloatExprAST>(value);
+    }
+
+    if(match(Tokentype::STRING_LITERAL)) {
+        return std::make_unique<StringExprAST>(previous().lexeme);
+    }
+
+    if(match(Tokentype::CHAR_LITERAL)) {
+    
+        std::string lexeme = previous().lexeme;
+        char val = lexeme.length() > 0 ? lexeme[0] : '\0'; 
+        return std::make_unique<CharExprAST>(val);
     }
 
     if (match(Tokentype::IDENTIFIER)) {
@@ -163,6 +182,16 @@ Token Parser::previous() {
 
 bool Parser::isAtEnd() {
     return peek().type == Tokentype::E_O_F;
+}
+
+std::string Parser::parseType() {
+    if (match(Tokentype::KW_INT)) return "int";
+    if (match(Tokentype::KW_FLOAT)) return "float";
+    if (match(Tokentype::KW_DOUBLE)) return "double";
+    if (match(Tokentype::KW_CHAR)) return "char";
+    if (match(Tokentype::KW_STRING)) return "string";
+    
+    throw std::runtime_error("Expected type specifier.");
 }
 
 

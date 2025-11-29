@@ -9,7 +9,7 @@
 #include <memory>
 #include <utility>
 
-enum class Type { Int, Invalid};
+enum class Type { Int, Float, Double, Char, String, Void, Invalid};
 
 // this defines the nodes of the abstract syntax tree
 
@@ -46,6 +46,27 @@ class NumberExprAST : public ExprAST {
     public:
     long value;
     NumberExprAST(long val) : value(val) {}
+    long accept(ASTVisitor& visitor) override;
+};
+
+class FloatExprAST : public ExprAST {
+    public:
+    double value;
+    FloatExprAST(double val) : value(val) {}
+    long accept(ASTVisitor& visitor) override;
+};
+
+class StringExprAST : public ExprAST {
+    public:
+    std::string value;
+    StringExprAST(const std::string& val) : value(val) {}
+    long accept(ASTVisitor& visitor) override;
+};
+
+class CharExprAST : public ExprAST {
+    public:
+    char value;
+    CharExprAST(char val) : value(val) {}
     long accept(ASTVisitor& visitor) override;
 };
 
@@ -140,6 +161,9 @@ class ASTVisitor {
     virtual long visit(VariableExprAST& node) = 0;
     virtual long visit(CallExprAST& node) = 0;
     virtual long visit(BinaryExprAST& node) = 0;
+    virtual long visit(FloatExprAST& node) = 0;
+    virtual long visit(StringExprAST& node) = 0;
+    virtual long visit(CharExprAST& node) = 0;
 };
 
 // -- simple imlementations of accept()
@@ -173,6 +197,18 @@ inline long CallExprAST::accept(ASTVisitor& visitor) {
 }
 
 inline long BinaryExprAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
+inline long FloatExprAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
+inline long StringExprAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
+inline long CharExprAST::accept(ASTVisitor& visitor) {
     return visitor.visit(*this);
 }
 

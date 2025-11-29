@@ -3,7 +3,7 @@
 
 // constructor
 Lexer::Lexer(const std::string& source)
-    : sourcecode(source), currentPos(0) {}
+    : sourcecode(source), currentPos(0), line(1), column(1) {}
 
 std::vector<Token> Lexer::scanTokens() {
     std::vector<Token> tokens;
@@ -18,6 +18,9 @@ std::vector<Token> Lexer::scanTokens() {
 
 Token Lexer::scanToken() {
     skipWhitespace();
+    
+    tokenStartLine = line;
+    tokenStartColumn = column;
 
     if(isAtEnd()) {
         return makeToken(Tokentype::E_O_F, "SIGNING_OFF");
@@ -38,6 +41,8 @@ Token Lexer::scanToken() {
         case '>': return makeToken(Tokentype::GRE_THAN, ">");
         case '=': return makeToken(Tokentype::ASSIGN, "=");
         case ',': return makeToken(Tokentype::COMMA, ",");
+        case '"': return string();
+        case '\'': return character();
     }
 
     // Check for numbers
@@ -58,6 +63,7 @@ Token Lexer::scanToken() {
 char Lexer::advance() {
     if(!isAtEnd()) {
         currentPos++;
+        column++;
     }
     return sourcecode[currentPos - 1];
 }
@@ -72,7 +78,7 @@ char Lexer::peek() {
 }
 
 Token Lexer::makeToken(Tokentype type, const std::string& lexeme) {
-    return Token{type, lexeme};
+    return Token{type, lexeme, tokenStartLine, tokenStartColumn};
 }
 
 void Lexer::skipWhitespace() {
@@ -83,7 +89,11 @@ void Lexer::skipWhitespace() {
             case ' ':
             case '\r':
             case '\t':
+                advance();
+                break;
             case '\n':
+                line++;
+                column = 0;
                 advance();
                 break;
             default:
@@ -94,12 +104,78 @@ void Lexer::skipWhitespace() {
 
 Token Lexer::number() {
     size_t start = currentPos - 1;
+    bool isFloat = false;
+
     while(std::isdigit(peek())) {
         advance();
     }
 
+    // Look for a fractional part.
+    if (peek() == '.' && std::isdigit(sourcecode[currentPos + 1])) {
+        isFloat = true;
+        // Consume the "."
+        advance();
+
+        while (std::isdigit(peek())) {
+            advance();
+        }
+    }
+
     std::string numLexeme = sourcecode.substr(start, currentPos - start);
-    return makeToken(Tokentype::NUMBER, numLexeme);
+    return makeToken(isFloat ? Tokentype::FLOAT_LITERAL : Tokentype::NUMBER, numLexeme);
+}
+
+Token Lexer::string() {
+    size_t start = currentPos - 1; 
+    // include opening quote for now? usually we don't want quotes in value but for lexeme we might
+    // The previous implementation of makeToken takes the lexeme. 
+    // Let's keep the quotes in the lexeme for now, or strip them. 
+    // Standard practice: token type STRING_LITERAL, lexeme includes quotes or value is stripped.
+    // Let's include quotes in lexeme to be safe, parser can strip.
+    
+    while (peek() != '"' && !isAtEnd()) {
+        if (peek() == '\n') {
+            line++;
+            column = 0;
+        }
+        advance();
+    }
+
+    if (isAtEnd()) {
+        // Unterminated string
+        return makeToken(Tokentype::UNKNOWN, "Unterminated string");
+    }
+
+    // The closing "
+    advance();
+
+    std::string value = sourcecode.substr(start, currentPos - start);
+    return makeToken(Tokentype::STRING_LITERAL, value);
+}
+
+Token Lexer::character() {
+    size_t start = currentPos - 1;
+    
+    if (peek() == '\'') {
+        // Empty char literal? '' -> usually invalid or null char
+        return makeToken(Tokentype::UNKNOWN, "Empty character literal");
+    }
+    
+    // Handle escape sequences if necessary, for now simple char
+    if (peek() == '\\') {
+        advance(); // skip \ 
+        // advance again for the escaped char
+    }
+    advance(); 
+
+    if (peek() != '\'') {
+        return makeToken(Tokentype::UNKNOWN, "Unterminated character literal");
+    }
+
+    advance(); // closing '
+
+    std::string value = sourcecode.substr(start, currentPos - start);
+    return makeToken(Tokentype::CHAR_LITERAL, value);
 }
 
 Token Lexer::identifier() {
@@ -110,9 +186,19 @@ Token Lexer::identifier() {
     std::string idLexeme = sourcecode.substr(start, currentPos - start);
 
     //check if keyword
-    if (idLexeme == "int") return makeToken(Tokentype::KW_INT, idLexeme);
-    if (idLexeme == "return") return makeToken(Tokentype::KW_RETURN, idLexeme);
-    
-    // It's a regular identifier
-    return makeToken(Tokentype::IDENTIFIER, idLexeme);
+    if(idLexeme == "int") {
+        return makeToken(Tokentype::KW_INT, idLexeme);
+    } else if (idLexeme == "return") {
+        return makeToken(Tokentype::KW_RETURN, idLexeme);
+    } else if (idLexeme == "float") {
+        return makeToken(Tokentype::KW_FLOAT, idLexeme);
+    } else if (idLexeme == "char") {
+        return makeToken(Tokentype::KW_CHAR, idLexeme);
+    } else if (idLexeme == "string") {
+        return makeToken(Tokentype::KW_STRING, idLexeme);
+    } else if (idLexeme == "double") {
+        return makeToken(Tokentype::KW_DOUBLE, idLexeme);
+    } else {
+        return makeToken(Tokentype::IDENTIFIER, idLexeme);
+    }
 }

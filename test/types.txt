@@ -1,0 +1,8 @@
+int main() {
+    float f = 3.14;
+    int i = 10;
+    string s = "hello";
+    char c = 'a';
+    float res = f + i;
+    return 0;
+}

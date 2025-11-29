@@ -121,3 +121,18 @@ long ASTPrinter::visit(CallExprAST& node) {
     }
     return 0;
 }
+
+long ASTPrinter::visit(FloatExprAST& node) {
+    printNode("Float", std::to_string(node.value));
+    return 0;
+}
+
+long ASTPrinter::visit(StringExprAST& node) {
+    printNode("String", node.value);
+    return 0;
+}
+
+long ASTPrinter::visit(CharExprAST& node) {
+    printNode("Char", std::string(1, node.value));
+    return 0;
+}

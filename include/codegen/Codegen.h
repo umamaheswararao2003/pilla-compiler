@@ -27,8 +27,12 @@ public:
     long visit(VariableExprAST& node) override;
     long visit(CallExprAST& node) override;
     long visit(BinaryExprAST& node) override;
+    long visit(FloatExprAST& node) override;
+    long visit(StringExprAST& node) override;
+    long visit(CharExprAST& node) override;
 
 private:
+    llvm::Type* getLLVMType(const std::string& typeName);
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::Module> module;
     std::unique_ptr<llvm::IRBuilder<>> builder;

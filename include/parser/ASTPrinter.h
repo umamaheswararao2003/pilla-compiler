@@ -23,6 +23,9 @@ class ASTPrinter : public ASTVisitor {
     long visit(VariableExprAST& node) override;
     long visit(CallExprAST& node) override;
     long visit(BinaryExprAST& node) override;
+    long visit(FloatExprAST& node) override;
+    long visit(StringExprAST& node) override;
+    long visit(CharExprAST& node) override;
 
 private:
     int indentLevel;

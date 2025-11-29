@@ -10,10 +10,10 @@ enum class Tokentype {
     GRE_THAN, SEMICOLON, PLUS, POUND,ASSIGN, COMMA,
 
     // NUMBERS AND NAMES
-    NUMBER, IDENTIFIER,
+    NUMBER, IDENTIFIER, FLOAT_LITERAL, CHAR_LITERAL, STRING_LITERAL,
 
     // KEYWORDS
-    KW_INT, KW_RETURN,
+    KW_INT, KW_RETURN, KW_FLOAT, KW_CHAR, KW_STRING, KW_DOUBLE,
 
     // OTHER
     UNKNOWN,
@@ -27,6 +27,8 @@ std::string tokenTypeToString(Tokentype type);
 struct Token {
     Tokentype type;
     std::string lexeme;
+    int line;
+    int column;
 
     // helper function to print into console 
     void print() const;
