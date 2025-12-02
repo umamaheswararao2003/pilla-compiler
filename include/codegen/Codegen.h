@@ -23,6 +23,7 @@ public:
     long visit(FunctionAST& node) override;
     long visit(VariableDeclAST& node) override;
     long visit(ReturnStmtAST& node) override;
+    long visit(PrintStmtAST& node) override;
     long visit(NumberExprAST& node) override;
     long visit(VariableExprAST& node) override;
     long visit(CallExprAST& node) override;

@@ -35,6 +35,9 @@ class Parser {
     // parse return statement
     std::unique_ptr<ReturnStmtAST> parseReturnStatement();
 
+    // parse expression statement
+    std::unique_ptr<StmtAST> parsePrintStatement();
+
     // parse an expression
     std::unique_ptr<ExprAST> parseExpression();
 

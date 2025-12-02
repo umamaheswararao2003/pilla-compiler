@@ -82,6 +82,11 @@ long Semantics::visit(ReturnStmtAST& node) {
     return 0;
 }
 
+long Semantics::visit(PrintStmtAST& node) {
+    node.expression->accept(*this);
+    return 0;
+}
+
 long Semantics::visit(BinaryExprAST& node) {
     node.left->accept(*this);
     node.right->accept(*this);
@@ -124,6 +129,15 @@ long Semantics::visit(VariableExprAST& node) {
 }
 
 long Semantics::visit(CallExprAST& node) {
+    // Allow external functions like printf without declaration
+    if (node.callee == "printf") {
+        for (const auto& arg : node.args) {
+            arg->accept(*this);
+        }
+        node.inferredType = Type::Int;
+        return 0;
+    }
+    
     auto func = getFunction(node.callee);
     if (!func) {
         error("Undefined function: " + node.callee);

@@ -1,17 +1,20 @@
 ; ModuleID = 'pilla-module'
 source_filename = "pilla-module"
 
+@0 = private unnamed_addr constant [12 x i8] c"\22sum is %c\22\00", align 1
+
+define i8 @sum(i8 %a, i8 %b, i8 %c) {
+entry:
+  %addtmp = add i8 %b, %a
+  %addtmp7 = add i8 %addtmp, %c
+  ret i8 %addtmp7
+}
+
 define i64 @main() {
 entry:
-  %c = alloca i64, align 8
-  %b = alloca i64, align 8
-  %a = alloca i64, align 8
-  store i64 10, ptr %a, align 4
-  store i64 20, ptr %b, align 4
-  %a1 = load i64, ptr %a, align 4
-  %b2 = load i64, ptr %b, align 4
-  %addtmp = add i64 %a1, %b2
-  store i64 %addtmp, ptr %c, align 4
-  %c3 = load i64, ptr %c, align 4
-  ret i64 %c3
+  %calltmp = call i8 @sum(i8 10, i8 20, i8 39)
+  %calltmp4 = call i32 (ptr, ...) @printf(ptr noundef nonnull dereferenceable(1) @0, i8 %calltmp)
+  ret i64 0
 }
+
+declare i32 @printf(ptr, ...)

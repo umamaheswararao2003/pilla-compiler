@@ -123,6 +123,14 @@ class ReturnStmtAST : public StmtAST {
     long accept(ASTVisitor& visitor) override;
 };
 
+// expression statement
+class PrintStmtAST : public StmtAST {
+    public:
+    std::unique_ptr<ExprAST> expression;
+    PrintStmtAST(std::unique_ptr<ExprAST> expr) : expression(std::move(expr)) {}
+    long accept(ASTVisitor& visitor) override;
+};
+
 class FunctionAST {
     public:
     std::string returnType;
@@ -157,6 +165,7 @@ class ASTVisitor {
     virtual long visit(FunctionAST& node) = 0;
     virtual long visit(VariableDeclAST& node) = 0;
     virtual long visit(ReturnStmtAST& node) = 0;
+    virtual long visit(PrintStmtAST& node) = 0;
     virtual long visit(NumberExprAST& node) = 0;
     virtual long visit(VariableExprAST& node) = 0;
     virtual long visit(CallExprAST& node) = 0;
@@ -181,6 +190,10 @@ inline long VariableDeclAST::accept(ASTVisitor& visitor) {
 }
 
 inline long ReturnStmtAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
+inline long PrintStmtAST::accept(ASTVisitor& visitor) {
     return visitor.visit(*this);
 }
 

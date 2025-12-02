@@ -61,7 +61,14 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (peek().type == Tokentype::KW_RETURN) {
         return parseReturnStatement();
     }
-    throw std::runtime_error("expected a statement");
+    // Fallback to expression statement
+    return parsePrintStatement();
+}
+
+std::unique_ptr<StmtAST> Parser::parsePrintStatement() {
+    auto expr = parseExpression();
+    consume(Tokentype::SEMICOLON, "Expected ';' after expression.");
+    return std::make_unique<PrintStmtAST>(std::move(expr));
 }
 
 std::unique_ptr<VariableDeclAST> Parser::parseVariableDecl() {

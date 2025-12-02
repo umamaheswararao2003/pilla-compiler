@@ -78,6 +78,14 @@ long ASTPrinter::visit(ReturnStmtAST& node) {
     return 0;
 }
 
+long ASTPrinter::visit(PrintStmtAST& node) {
+    printNode("PrintStmt");
+    increaseIndent(true);
+    node.expression->accept(*this);
+    decreaseIndent();
+    return 0;
+}
+
 long ASTPrinter::visit(BinaryExprAST& node) {
     std::string opStr;
     switch (node.op) {

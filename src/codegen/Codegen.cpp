@@ -40,10 +40,10 @@ llvm::Value* Codegen::logError(const char* str) {
 
 llvm::Type* Codegen::getLLVMType(const std::string& typeName) {
     if (typeName == "int") return llvm::Type::getInt64Ty(*context);
-    if (typeName == "float") return llvm::Type::getDoubleTy(*context); // Use double for float for simplicity or float
+    if (typeName == "float") return llvm::Type::getDoubleTy(*context); 
     if (typeName == "double") return llvm::Type::getDoubleTy(*context);
     if (typeName == "char") return llvm::Type::getInt8Ty(*context);
-    if (typeName == "string") return llvm::Type::getInt8PtrTy(*context);
+    if (typeName == "string") return llvm::PointerType::getUnqual(*context);
     if (typeName == "void") return llvm::Type::getVoidTy(*context);
     return llvm::Type::getInt64Ty(*context); // Default
 }
@@ -94,7 +94,7 @@ long Codegen::visit(FunctionAST& node) {
     llvm::verifyFunction(*function);
 
     // 6. Optimize function
-     //fpm->run(*function);
+    fpm->run(*function);
     
     return 0;
 }
@@ -131,6 +131,11 @@ long Codegen::visit(ReturnStmtAST& node) {
     return 0;
 }
 
+long Codegen::visit(PrintStmtAST& node) {
+    node.expression->accept(*this);
+    return 0;
+}
+
 long Codegen::visit(NumberExprAST& node) {
     lastValue = llvm::ConstantInt::get(*context, llvm::APInt(64, node.value));
     return 0;
@@ -158,16 +163,34 @@ long Codegen::visit(VariableExprAST& node) {
 
 long Codegen::visit(CallExprAST& node) {
     llvm::Function* callee = module->getFunction(node.callee);
+    
+    // Auto declare printf
+    if (!callee && node.callee == "printf") {
+        std::vector<llvm::Type*> args;
+        args.push_back(llvm::PointerType::getUnqual(*context)); // format string
+        llvm::FunctionType* printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), args, true);
+        callee = llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, "printf", module.get());
+    }
+
     if (!callee) {
         logError("Unknown function referenced");
         lastValue = nullptr;
         return 0;
     }
     
-    if (callee->arg_size() != node.args.size()) {
-        logError("Incorrect # arguments passed");
-        lastValue = nullptr;
-        return 0;
+    bool isVarArg = callee->isVarArg();
+    if (isVarArg) {
+        if (node.args.size() < callee->arg_size()) {
+            logError("Incorrect # arguments passed to vararg function");
+            lastValue = nullptr;
+            return 0;
+        }
+    } else {
+        if (callee->arg_size() != node.args.size()) {
+            logError("Incorrect # arguments passed");
+            lastValue = nullptr;
+            return 0;
+        }
     }
     
     std::vector<llvm::Value*> argsV;
@@ -228,7 +251,7 @@ long Codegen::visit(FloatExprAST& node) {
 }
 
 long Codegen::visit(StringExprAST& node) {
-    lastValue = builder->CreateGlobalStringPtr(node.value);
+    lastValue = builder->CreateGlobalString(node.value);
     return 0;
 }
 
