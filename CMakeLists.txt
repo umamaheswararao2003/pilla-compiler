@@ -37,5 +37,5 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
 endif()
 
 # Link LLVM libraries
-llvm_map_components_to_libnames(llvm_libs core support irreader native)
+llvm_map_components_to_libnames(llvm_libs core support irreader native passes)
 target_link_libraries(pilla-compiler PRIVATE ${llvm_libs})

@@ -6,12 +6,14 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Analysis/LoopAnalysisManager.h"
+#include "llvm/Analysis/CGSCCPassManager.h"
 #include <string>
 #include <vector>
 #include <map>
 #include <memory>
-
-#include "llvm/IR/LegacyPassManager.h"
 
 class Codegen : public ASTVisitor {
 public:
@@ -37,7 +39,15 @@ private:
     std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::Module> module;
     std::unique_ptr<llvm::IRBuilder<>> builder;
-    std::unique_ptr<llvm::legacy::FunctionPassManager> fpm;
+
+    // New Pass Manager members
+    llvm::FunctionPassManager fpm;
+    llvm::LoopAnalysisManager lam;
+    llvm::FunctionAnalysisManager fam;
+    llvm::CGSCCAnalysisManager cgam;
+    llvm::ModuleAnalysisManager mam;
+    llvm::PassBuilder pb;
+
     std::map<std::string, llvm::Value*> namedValues;
     llvm::Value* lastValue = nullptr;
 

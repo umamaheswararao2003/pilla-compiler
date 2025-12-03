@@ -6,7 +6,6 @@ bool Semantics::analyze(ProgramAST& program) {
     functions.clear();
     scopes.clear();
     program.accept(*this);
-    program.accept(*this);
     return !hasError;
 }
 

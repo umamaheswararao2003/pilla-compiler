@@ -192,6 +192,7 @@ bool Parser::isAtEnd() {
 }
 
 std::string Parser::parseType() {
+    if (match(Tokentype::KW_VOID)) return "void";
     if (match(Tokentype::KW_INT)) return "int";
     if (match(Tokentype::KW_FLOAT)) return "float";
     if (match(Tokentype::KW_DOUBLE)) return "double";

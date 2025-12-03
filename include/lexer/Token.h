@@ -14,6 +14,7 @@ enum class Tokentype {
 
     // KEYWORDS
     KW_INT, KW_RETURN, KW_FLOAT, KW_CHAR, KW_STRING, KW_DOUBLE,
+    KW_VOID,
 
     // OTHER
     UNKNOWN,

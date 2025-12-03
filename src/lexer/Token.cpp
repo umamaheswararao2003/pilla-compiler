@@ -24,6 +24,7 @@ namespace {
         {Tokentype::IDENTIFIER, "IDENTIFIER"},
         {Tokentype::KW_INT, "KW_INT"},
         {Tokentype::KW_FLOAT, "KW_FLOAT"},
+        {Tokentype::KW_VOID, "KW_VOID"},
         {Tokentype::KW_CHAR, "KW_CHAR"},
         {Tokentype::KW_STRING, "KW_STRING"},
         {Tokentype::KW_DOUBLE, "KW_DOUBLE"},

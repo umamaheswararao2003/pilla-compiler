@@ -4,7 +4,10 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Utils.h"
-#include "llvm/Pass.h"
+#include "llvm/Transforms/Utils/Mem2Reg.h"
+#include "llvm/Transforms/Scalar/Reassociate.h"
+#include "llvm/Transforms/Scalar/SimplifyCFG.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
 #include <iostream>
 
 Codegen::Codegen() {
@@ -12,20 +15,27 @@ Codegen::Codegen() {
     module = std::make_unique<llvm::Module>("pilla-module", *context);
     builder = std::make_unique<llvm::IRBuilder<>>(*context);
 
-    fpm = std::make_unique<llvm::legacy::FunctionPassManager>(module.get());
+    // Register analysis managers
+    pb.registerModuleAnalyses(mam);
+    pb.registerCGSCCAnalyses(cgam);
+    pb.registerFunctionAnalyses(fam);
+    pb.registerLoopAnalyses(lam);
+    pb.crossRegisterProxies(lam, fam, cgam, mam);
 
-    // fron alloca to registers
-    fpm->add(llvm::createPromoteMemoryToRegisterPass());
-    // peep hole optimisations 
-    fpm->add(llvm::createInstructionCombiningPass());
-    // Reassociate expressions.
-    fpm->add(llvm::createReassociatePass());
+    // Register TargetLibraryInfoAnalysis
+    // fam.registerPass([&] { return llvm::TargetLibraryInfoAnalysis(llvm::TargetLibraryInfoImpl()); });
+
+    // Add passes
+    // Promote allocas to registers
+    fpm.addPass(llvm::PromotePass());
+    // Peephole optimizations
+    fpm.addPass(llvm::InstCombinePass());
+    // Reassociate expressions
+    fpm.addPass(llvm::ReassociatePass());
     // CSE
-    fpm->add(llvm::createGVNPass());
-    // used to simplyy the  control flow
-    fpm->add(llvm::createCFGSimplificationPass());
-
-    fpm->doInitialization();
+    fpm.addPass(llvm::GVNPass());
+    // Simplify control flow
+    // fpm.addPass(llvm::SimplifyCFGPass());
 }
 
 void Codegen::generate(ProgramAST& program) {
@@ -89,12 +99,16 @@ long Codegen::visit(FunctionAST& node) {
     for (auto& stmt : node.body) {
         stmt->accept(*this);
     }
+
+    if (retType->isVoidTy() && !builder->GetInsertBlock()->getTerminator()) {
+        builder->CreateRetVoid(); 
+    }
     
     // 5. Verify function
     llvm::verifyFunction(*function);
 
     // 6. Optimize function
-    fpm->run(*function);
+    fpm.run(*function, fam);
     
     return 0;
 }

@@ -198,6 +198,8 @@ Token Lexer::identifier() {
         return makeToken(Tokentype::KW_STRING, idLexeme);
     } else if (idLexeme == "double") {
         return makeToken(Tokentype::KW_DOUBLE, idLexeme);
+    } else if (idLexeme == "void") {
+        return makeToken(Tokentype::KW_VOID, idLexeme);
     } else {
         return makeToken(Tokentype::IDENTIFIER, idLexeme);
     }

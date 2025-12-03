@@ -2,9 +2,9 @@ int sum(int a, int b, int c) {
   return a + b + c;
 }
 
-int main() {
+void main() {
   int a =10;
   int b = 4 + 16;
   printf("%d",b);
-  return 0;
+  printf("%d",sum(a, b, 3));
 }
