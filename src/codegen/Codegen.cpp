@@ -35,7 +35,7 @@ Codegen::Codegen() {
     // CSE
     fpm.addPass(llvm::GVNPass());
     // Simplify control flow
-    // fpm.addPass(llvm::SimplifyCFGPass());
+    fpm.addPass(llvm::SimplifyCFGPass());
 }
 
 void Codegen::generate(ProgramAST& program) {
@@ -47,6 +47,109 @@ llvm::Value* Codegen::logError(const char* str) {
     std::cerr << "Codegen Error: " << str << std::endl;
     return nullptr;
 }
+
+void Codegen::initializeTargets() {
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmParser();
+    llvm::InitializeNativeTargetAsmPrinter();
+}
+
+void Codegen::emitObjectCode(const std::string& filename) {
+    // Get target triple
+    llvm::Triple targetTriple(llvm::sys::getDefaultTargetTriple());
+    module->setTargetTriple(targetTriple);
+    
+    // Get target
+    std::string error;
+    auto target = llvm::TargetRegistry::lookupTarget(targetTriple.str(), error);
+    
+    if (!target) {
+        llvm::errs() << "Error: " << error << "\n";
+        return;
+    }
+    
+    // Create target machine
+    auto CPU = "generic";
+    auto features = "";
+    llvm::TargetOptions opt;
+    auto RM = llvm::Reloc::Model::PIC_;
+    auto targetMachine = target->createTargetMachine(
+        targetTriple, CPU, features, opt, RM);
+    
+    // Configure module
+    module->setDataLayout(targetMachine->createDataLayout());
+    
+    // Emit object file
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
+    
+    if (EC) {
+        llvm::errs() << "Could not open file: " << EC.message() << "\n";
+        return;
+    }
+    
+    llvm::legacy::PassManager pass;
+    auto fileType = llvm::CodeGenFileType::ObjectFile;
+    
+    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType)) {
+        llvm::errs() << "TargetMachine can't emit a file of this type\n";
+        return;
+    }
+    
+    pass.run(*module);
+    dest.flush();
+    
+    std::cout << "Object file written to: " << filename << "\n";
+}
+
+void Codegen::emitAssembly(const std::string& filename) {
+    // Get target triple
+    llvm::Triple targetTriple(llvm::sys::getDefaultTargetTriple());
+    module->setTargetTriple(targetTriple);
+    
+    // Get target
+    std::string error;
+    auto target = llvm::TargetRegistry::lookupTarget(targetTriple.str(), error);
+    
+    if (!target) {
+        llvm::errs() << "Error: " << error << "\n";
+        return;
+    }
+    
+    // Create target machine
+    auto CPU = "generic";
+    auto features = "";
+    llvm::TargetOptions opt;
+    auto RM = llvm::Reloc::Model::PIC_;
+    auto targetMachine = target->createTargetMachine(
+        targetTriple, CPU, features, opt, RM);
+    
+    // Configure module
+    module->setDataLayout(targetMachine->createDataLayout());
+    
+    // Emit assembly file
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
+    
+    if (EC) {
+        llvm::errs() << "Could not open file: " << EC.message() << "\n";
+        return;
+    }
+    
+    llvm::legacy::PassManager pass;
+    auto fileType = llvm::CodeGenFileType::AssemblyFile;
+    
+    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType)) {
+        llvm::errs() << "TargetMachine can't emit assembly\n";
+        return;
+    }
+    
+    pass.run(*module);
+    dest.flush();
+    
+    std::cout << "Assembly file written to: " << filename << "\n";
+}
+
 
 llvm::Type* Codegen::getLLVMType(const std::string& typeName) {
     if (typeName == "int") return llvm::Type::getInt64Ty(*context);

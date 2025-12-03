@@ -29,7 +29,7 @@ add_executable(pilla-compiler
 )
 
 # Tell CMake to look for header files in the 'include' directory
-target_include_directories(pilla-compiler PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(pilla-compiler SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Optional: Enable warnings
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
@@ -37,5 +37,15 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
 endif()
 
 # Link LLVM libraries
-llvm_map_components_to_libnames(llvm_libs core support irreader native passes)
+llvm_map_components_to_libnames(llvm_libs 
+    core 
+    support 
+    irreader 
+    native 
+    passes
+    target
+    mc
+    asmparser
+    asmprinter
+)
 target_link_libraries(pilla-compiler PRIVATE ${llvm_libs})

@@ -11,19 +11,45 @@
 
 int main(int argc, char *argv[])
 {
-    // Check if the user provided a filename
-    if (argc < 2)
-    {
-        std::cerr << "Usage: " << argv[0] << " <source-file>\n";
+    // Parse command-line arguments
+    std::string inputFile;
+    std::string outputFile;
+    bool emitAssembly = false;
+    bool emitLLVMOnly = false;
+    
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <source-file> [options]\n";
+        std::cerr << "Options:\n";
+        std::cerr << "  -o <file>     Output file (default: output.o or output.s)\n";
+        std::cerr << "  -S            Emit assembly instead of object file\n";
+        std::cerr << "  -emit-llvm    Only emit LLVM IR (no object/assembly)\n";
         return 1;
     }
-
-    std::string filename = argv[1];
-    std::ifstream file(filename);
+    
+    inputFile = argv[1];
+    
+    // Parse options
+    for (int i = 2; i < argc; i++) {
+        std::string arg = argv[i];
+        if (arg == "-S") {
+            emitAssembly = true;
+        } else if (arg == "-emit-llvm") {
+            emitLLVMOnly = true;
+        } else if (arg == "-o" && i + 1 < argc) {
+            outputFile = argv[++i];
+        }
+    }
+    
+    // Set default output file if not specified
+    if (outputFile.empty() && !emitLLVMOnly) {
+        outputFile = emitAssembly ? "output.s" : "output.o";
+    }
+    
+    std::ifstream file(inputFile);
 
     if (!file.is_open())
     {
-        std::cerr << "Error: Could not open file '" << filename << "'\n";
+        std::cerr << "Error: Could not open file '" << inputFile << "'\n";
         return 1;
     }
 
@@ -73,7 +99,22 @@ int main(int argc, char *argv[])
     // ===== CODE GENERATION =====
     std::cout << "\n--- Generating LLVM IR ---\n";
     Codegen codegen;
+    
+    // Initialize LLVM targets
+    codegen.initializeTargets();
+    
+    // Generate LLVM IR
     codegen.generate(*ast);
+    
+    // Emit object code or assembly based on flags
+    if (!emitLLVMOnly) {
+        std::cout << "\n--- Generating Machine Code ---\n";
+        if (emitAssembly) {
+            codegen.emitAssembly(outputFile);
+        } else {
+            codegen.emitObjectCode(outputFile);
+        }
+    }
 
     return 0;
 }

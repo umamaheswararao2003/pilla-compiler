@@ -10,6 +10,13 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/CGSCCPassManager.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Host.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -20,6 +27,11 @@ public:
     Codegen();
     void generate(ProgramAST& program);
     llvm::Module* getModule() { return module.get(); }
+    
+    // Machine code generation methods
+    void initializeTargets();
+    void emitObjectCode(const std::string& filename);
+    void emitAssembly(const std::string& filename);
 
     long visit(ProgramAST& node) override;
     long visit(FunctionAST& node) override;

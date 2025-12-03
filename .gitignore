@@ -1,3 +1,6 @@
 /.vscode
 /build
 /test_optional.cpp
+*.o
+*.s
+*.out

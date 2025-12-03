@@ -163,7 +163,7 @@ Token Lexer::character() {
     
     // Handle escape sequences if necessary, for now simple char
     if (peek() == '\\') {
-        advance(); // skip \ 
+        advance();  
         // advance again for the escaped char
     }
     advance(); 
