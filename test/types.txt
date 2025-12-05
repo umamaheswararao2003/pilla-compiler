@@ -4,5 +4,5 @@ int main() {
     string s = "hello";
     char c = 'a';
     float res = f + i;
-    return 0;
+    return 0
 }
