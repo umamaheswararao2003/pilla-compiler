@@ -39,6 +39,8 @@ namespace {
         {Tokentype::KW_RETURN, "KW_RETURN"},
         {Tokentype::KW_IF, "KW_IF"},
         {Tokentype::KW_ELSE, "KW_ELSE"},
+        {Tokentype::KW_WHILE, "KW_WHILE"},
+        {Tokentype::KW_FOR, "KW_FOR"},
         {Tokentype::UNKNOWN, "UNKNOWN"},
         {Tokentype::E_O_F, "EOF"}
     };

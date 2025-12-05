@@ -40,6 +40,8 @@ class Parser {
 
     // parse if statement
     std::unique_ptr<IfStmtAST> parseIfStatement();
+    std::unique_ptr<WhileStmtAST> parseWhileStatement();
+    std::unique_ptr<ForStmtAST> parseForStatement();
 
     // parse an expression
     std::unique_ptr<ExprAST> parseExpression();

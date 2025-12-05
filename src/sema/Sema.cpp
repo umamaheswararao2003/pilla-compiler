@@ -108,6 +108,51 @@ long Semantics::visit(IfStmtAST& node) {
     return 0;
 }
 
+long Semantics::visit(WhileStmtAST& node) {
+    node.condition->accept(*this);
+    Type condType = node.condition->inferredType;
+    if (condType != Type::Int && condType != Type::Float && condType != Type::Double) {
+        error("While condition must be an integer or float");
+    } 
+
+    enterScope();
+    
+    for (const auto& stmt : node.body) {
+        stmt->accept(*this);
+    }
+    
+    exitScope();
+    return 0;
+}
+
+long Semantics::visit(ForStmtAST& node) {
+    enterScope();
+
+    if(node.initializer) {
+        node.initializer->accept(*this);
+    }
+    
+    if (node.condition) {
+        node.condition->accept(*this);
+
+        Type condType = node.condition->inferredType;
+        if (condType != Type::Int && condType != Type::Float && condType != Type::Double) {
+            error("For condition must be an integer or float");
+        }
+    }
+
+    if (node.increment) {
+        node.increment->accept(*this);
+    }
+
+    for (const auto& stmt : node.body) {
+        stmt->accept(*this);
+    }
+
+    exitScope();
+    return 0;
+}
+
 long Semantics::visit(BinaryExprAST& node) {
     node.left->accept(*this);
     node.right->accept(*this);

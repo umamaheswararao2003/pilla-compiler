@@ -65,6 +65,15 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (peek().type == Tokentype::KW_IF) {
         return parseIfStatement();
     }
+
+    if (match(Tokentype::KW_WHILE)) {
+        return parseWhileStatement();
+    }
+
+    if (match(Tokentype::KW_FOR)) {
+        return parseForStatement();
+    }
+
     // Fallback to expression statement
     return parsePrintStatement();
 }
@@ -120,6 +129,62 @@ std::unique_ptr<IfStmtAST> Parser::parseIfStatement() {
     );
 }
 
+std::unique_ptr<WhileStmtAST> Parser::parseWhileStatement() {
+    consume(Tokentype::LPAR, "Expected '(' after 'while'");
+    auto condition = parseExpression();
+    consume(Tokentype::RPAR, "Expected ')' after condition");
+    consume(Tokentype::LBRACE, "Expected '{' after while condition");
+    std::vector<std::unique_ptr<StmtAST>> body;
+    while (!match(Tokentype::RBRACE) && !isAtEnd()) {
+        body.push_back(parseStatement());
+    }
+
+    return std::make_unique<WhileStmtAST>(std::move(condition), std::move(body));
+}
+
+std::unique_ptr<ForStmtAST> Parser::parseForStatement() {
+    consume(Tokentype::LPAR, "Expected '(' after 'for'");
+    std::unique_ptr<StmtAST> initializer = nullptr;
+    if(!match(Tokentype::SEMICOLON)) {
+        if(peek().type == Tokentype::KW_INT || 
+            peek().type == Tokentype::KW_FLOAT || 
+            peek().type == Tokentype::KW_DOUBLE) {
+                initializer = parseVariableDecl();
+        } else {
+            auto expr = parseExpression();
+            consume(Tokentype::SEMICOLON, "Expected ';' after initializer");
+        }
+    }
+
+    //condition
+    std::unique_ptr<ExprAST> condition = nullptr;
+    if(!match(Tokentype::SEMICOLON)) {
+        condition = parseExpression();
+        consume(Tokentype::SEMICOLON, "Expected ';' after condition");
+    }
+
+    // increment
+    std::unique_ptr<ExprAST> increment = nullptr;
+    if(!match(Tokentype::RPAR)) {
+        increment = parseExpression();
+        consume(Tokentype::RPAR, "Expected ')' after increment");
+    }
+
+    // body
+    consume(Tokentype::LBRACE, "Expected '{' after for statement");
+    std::vector<std::unique_ptr<StmtAST>> body;
+    while (!match(Tokentype::RBRACE) && !isAtEnd()) {
+        body.push_back(parseStatement());
+    }
+
+    return std::make_unique<ForStmtAST>(
+        std::move(initializer),
+        std::move(condition),
+        std::move(increment),
+        std::move(body)
+    );
+}
+
 // Helper function to get operator precedence
 // Higher number = higher precedence
 int Parser::getOperatorPrecedence(Tokentype op) {
@@ -127,17 +192,19 @@ int Parser::getOperatorPrecedence(Tokentype op) {
         case Tokentype::MULTIPLY:
         case Tokentype::DIVIDE:
         case Tokentype::MODULO:
-            return 3;  // Highest precedence
+            return 4;  // Highest precedence
         case Tokentype::PLUS:
         case Tokentype::MINUS:
-            return 2;  // Medium precedence
+            return 3;  // Medium-high precedence
         case Tokentype::EQUAL_EQUAL:
         case Tokentype::NOT_EQUAL:
         case Tokentype::LESS_THAN:
         case Tokentype::GRE_THAN:
         case Tokentype::LESS_EQUAL:
         case Tokentype::GREATER_EQUAL:
-            return 1;  // Lower precedence (comparison)
+            return 2;  // Lower precedence (comparison)
+        case Tokentype::ASSIGN:
+            return 1;  // Lowest precedence (assignment)
         default:
             return 0;  // Not a binary operator
     }
@@ -224,7 +291,6 @@ std::unique_ptr<ExprAST> Parser::parsePrimary() {
     throw std::runtime_error(" expected expression, found " + peek().lexeme);
 }
 
-
 // some needed functions
 
 bool Parser::match(Tokentype type) {
@@ -246,7 +312,7 @@ Token Parser::consume(Tokentype type, const std::string& message) {
         return previous();
     }
     throw std::runtime_error("syntax error :" + message +
-                            " but Found" + peek().lexeme);
+                            " but Found - " + peek().lexeme);
 }
 
 Token Parser::peek() {

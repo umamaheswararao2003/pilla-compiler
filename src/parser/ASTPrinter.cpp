@@ -122,6 +122,76 @@ long ASTPrinter::visit(IfStmtAST& node) {
     return 0;
 }
 
+long ASTPrinter::visit(WhileStmtAST& node) {
+    printNode("WhileStmt");
+    
+    // Print condition
+    increaseIndent(false);
+    printNode("Condition");
+    increaseIndent(true);
+    node.condition->accept(*this);
+    decreaseIndent();
+    decreaseIndent();
+    
+    // Print body
+    increaseIndent(true);
+    printNode("Body");
+    for (size_t i = 0; i < node.body.size(); ++i) {
+        increaseIndent(i == node.body.size() - 1);
+        node.body[i]->accept(*this);
+        decreaseIndent();
+    }
+    decreaseIndent();
+    
+    return 0;
+}
+
+long ASTPrinter::visit(ForStmtAST& node) {
+    printNode("ForStmt");
+    
+    // Print initializer if present
+    if (node.initializer) {
+        increaseIndent(false);
+        printNode("Initializer");
+        increaseIndent(true);
+        node.initializer->accept(*this);
+        decreaseIndent();
+        decreaseIndent();
+    }
+    
+    // Print condition if present
+    if (node.condition) {
+        increaseIndent(false);
+        printNode("Condition");
+        increaseIndent(true);
+        node.condition->accept(*this);
+        decreaseIndent();
+        decreaseIndent();
+    }
+    
+    // Print increment if present
+    if (node.increment) {
+        increaseIndent(false);
+        printNode("Increment");
+        increaseIndent(true);
+        node.increment->accept(*this);
+        decreaseIndent();
+        decreaseIndent();
+    }
+    
+    // Print body
+    increaseIndent(true);
+    printNode("Body");
+    for (size_t i = 0; i < node.body.size(); ++i) {
+        increaseIndent(i == node.body.size() - 1);
+        node.body[i]->accept(*this);
+        decreaseIndent();
+    }
+    decreaseIndent();
+    
+    return 0;
+}
+
 long ASTPrinter::visit(BinaryExprAST& node) {
     std::string opStr;
     switch (node.op) {

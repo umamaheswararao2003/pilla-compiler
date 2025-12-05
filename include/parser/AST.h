@@ -148,6 +148,33 @@ class IfStmtAST : public StmtAST {
     long accept(ASTVisitor& visitor) override;
 };
 
+class WhileStmtAST : public StmtAST {
+    public:
+    std::unique_ptr<ExprAST> condition;
+    std::vector<std::unique_ptr<StmtAST>> body;
+    WhileStmtAST(std::unique_ptr<ExprAST> cond, 
+                  std::vector<std::unique_ptr<StmtAST>> bodyStmts)
+            : condition (std::move(cond)), body(std::move(bodyStmts)) {}
+
+    long accept(ASTVisitor& visitor) override;
+};
+
+class ForStmtAST : public StmtAST {
+    public:
+    std::unique_ptr<StmtAST> initializer;
+    std::unique_ptr<ExprAST> condition;
+    std::unique_ptr<ExprAST> increment;
+    std::vector<std::unique_ptr<StmtAST>> body;
+
+    ForStmtAST(std::unique_ptr<StmtAST> init, std::unique_ptr<ExprAST> cond,
+             std::unique_ptr<ExprAST> incr, std::vector<std::unique_ptr<StmtAST>> bodyStmts)
+        : initializer(std::move(init)), condition(std::move(cond)), 
+            increment(std::move(incr)), body(std::move(bodyStmts)) {}
+
+    long accept(ASTVisitor& visitor);
+};
+
+
 class FunctionAST {
     public:
     std::string returnType;
@@ -184,6 +211,8 @@ class ASTVisitor {
     virtual long visit(ReturnStmtAST& node) = 0;
     virtual long visit(PrintStmtAST& node) = 0;
     virtual long visit(IfStmtAST& node) = 0;
+    virtual long visit(WhileStmtAST& node) = 0;
+    virtual long visit(ForStmtAST& node) = 0;
     virtual long visit(NumberExprAST& node) = 0;
     virtual long visit(VariableExprAST& node) = 0;
     virtual long visit(CallExprAST& node) = 0;
@@ -216,6 +245,14 @@ inline long PrintStmtAST::accept(ASTVisitor& visitor) {
 }
 
 inline long IfStmtAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
+inline long WhileStmtAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
+inline long ForStmtAST::accept(ASTVisitor& visitor) {
     return visitor.visit(*this);
 }
 

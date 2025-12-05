@@ -320,6 +320,119 @@ long Codegen::visit(IfStmtAST& node) {
     return 0;
 }
 
+long Codegen::visit(WhileStmtAST& node) {
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
+    
+    // Create basic blocks
+    llvm::BasicBlock* condBB = llvm::BasicBlock::Create(*context, "while.cond", function);
+    llvm::BasicBlock* bodyBB = llvm::BasicBlock::Create(*context, "while.body", function);
+    llvm::BasicBlock* endBB = llvm::BasicBlock::Create(*context, "while.end", function);
+    
+    builder->CreateBr(condBB);
+
+    // Emit condition block
+    builder->SetInsertPoint(condBB);
+    node.condition->accept(*this);
+    llvm::Value* condValue = lastValue;
+    llvm::Value* condBool = nullptr;
+
+    if (condValue->getType()->isFloatingPointTy()) {
+        condBool = builder->CreateFCmpONE(
+            condValue,
+            llvm::ConstantFP::get(*context, llvm::APFloat(0.0)),
+            "whilecond"
+        );
+    } else {
+        condBool = builder->CreateICmpNE(
+            condValue,
+            llvm::ConstantInt::get(condValue->getType(), 0),
+            "whilecond"
+        );
+    }
+
+    builder->CreateCondBr(condBool, bodyBB, endBB);
+     
+    // Emit body block
+    builder->SetInsertPoint(bodyBB);
+    for (auto& stmt : node.body) {
+        stmt->accept(*this);
+    }
+    
+    // after body again to condition 
+    builder->CreateBr(condBB);
+
+    //emit end block
+    builder->SetInsertPoint(endBB);
+    
+    return 0;
+}    
+
+long Codegen::visit(ForStmtAST& node) {
+
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
+
+    if(node.initializer) {
+        node.initializer->accept(*this);
+    }
+
+    llvm::BasicBlock* condBB = llvm::BasicBlock::Create(*context, "for.cond", function);
+    llvm::BasicBlock* bodyBB = llvm::BasicBlock::Create(*context, "for.body", function);
+    llvm::BasicBlock* incBB = llvm::BasicBlock::Create(*context, "for.inc", function);
+    llvm::BasicBlock* endBB = llvm::BasicBlock::Create(*context, "for.end", function);
+
+    builder->CreateBr(condBB);
+
+    // Emit condition block
+    builder->SetInsertPoint(condBB);
+    
+    llvm::Value* condBool = nullptr;
+    if(node.condition) {
+        node.condition->accept(*this);
+        llvm::Value* condValue = lastValue;
+
+        if (condValue->getType()->isFloatingPointTy()) {
+            condBool = builder->CreateFCmpONE(
+                condValue,
+                llvm::ConstantFP::get(*context, llvm::APFloat(0.0)),
+                "forcond"
+            );
+        } else {
+            condBool = builder->CreateICmpNE(
+                condValue,
+                llvm::ConstantInt::get(condValue->getType(), 0),
+                "forcond"
+            );
+        }
+    } else {
+        condBool = llvm::ConstantInt::get(llvm::Type::getInt1Ty(*context), 1);
+    }
+
+    // conditional branch 
+    builder->CreateCondBr(condBool, bodyBB, endBB);
+
+    // Emit body block
+    builder->SetInsertPoint(bodyBB);
+    for (auto& stmt : node.body) {
+        stmt->accept(*this);
+    }
+
+    // Emit increment block
+    builder->CreateBr(incBB);
+    builder->SetInsertPoint(incBB);
+
+    if(node.increment) {
+        node.increment->accept(*this);
+    }
+
+    // after body again to condition
+    builder->CreateBr(condBB);
+
+    //emit end block
+    builder->SetInsertPoint(endBB);
+
+    return 0;
+}
+
 long Codegen::visit(NumberExprAST& node) {
     lastValue = llvm::ConstantInt::get(*context, llvm::APInt(64, node.value));
     return 0;
@@ -348,14 +461,62 @@ long Codegen::visit(VariableExprAST& node) {
 long Codegen::visit(CallExprAST& node) {
     llvm::Function* callee = module->getFunction(node.callee);
     
-    // Auto declare printf
-    if (!callee && node.callee == "printf") {
-        std::vector<llvm::Type*> args;
-        args.push_back(llvm::PointerType::getUnqual(*context)); // format string
-        llvm::FunctionType* printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), args, true);
-        callee = llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, "printf", module.get());
+    // Special handling for printf
+    if (node.callee == "printf") {
+        if (!callee) {
+            // Auto declare printf
+            std::vector<llvm::Type*> args;
+            args.push_back(llvm::PointerType::getUnqual(*context)); // format string
+            llvm::FunctionType* printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), args, true);
+            callee = llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, "printf", module.get());
+        }
+        
+        // Generate format string and arguments
+        std::vector<llvm::Value*> argsV;
+        std::string formatStr = "";
+        
+        for (unsigned i = 0, e = node.args.size(); i != e; ++i) {
+            node.args[i]->accept(*this);
+            if (!lastValue) return 0;
+            
+            // Determine format specifier based on type
+            llvm::Type* argType = lastValue->getType();
+            if (argType->isIntegerTy(64)) {
+                formatStr += "%ld";
+            } else if (argType->isIntegerTy(32)) {
+                formatStr += "%d";
+            } else if (argType->isIntegerTy(8)) {
+                formatStr += "%c";
+            } else if (argType->isDoubleTy()) {
+                formatStr += "%f";
+            } else if (argType->isPointerTy()) {
+                formatStr += "%s";
+            } else {
+                formatStr += "%d";  // Default
+            }
+            
+            argsV.push_back(lastValue);
+            
+            // Add space between values (except for last one)
+            if (i < e - 1) {
+                formatStr += " ";
+            }
+        }
+        
+        // Add newline at the end
+        formatStr += "\n";
+        
+        // Create global string constant for format
+        llvm::Value* formatStrVal = builder->CreateGlobalStringPtr(formatStr);
+        
+        // Insert format string as first argument
+        argsV.insert(argsV.begin(), formatStrVal);
+        
+        lastValue = builder->CreateCall(callee, argsV, "calltmp");
+        return 0;
     }
 
+    // Regular function call handling
     if (!callee) {
         logError("Unknown function referenced");
         lastValue = nullptr;
@@ -389,6 +550,37 @@ long Codegen::visit(CallExprAST& node) {
 }
 
 long Codegen::visit(BinaryExprAST& node) {
+    // Handle assignment separately
+    if (node.op == Tokentype::ASSIGN) {
+        // For assignment, left must be a variable
+        VariableExprAST* varExpr = dynamic_cast<VariableExprAST*>(node.left.get());
+        if (!varExpr) {
+            logError("Left side of assignment must be a variable");
+            lastValue = nullptr;
+            return 0;
+        }
+        
+        // Evaluate right side
+        node.right->accept(*this);
+        llvm::Value* val = lastValue;
+        
+        // Get the variable's alloca
+        llvm::Value* variable = namedValues[varExpr->name];
+        if (!variable) {
+            logError("Unknown variable name in assignment");
+            lastValue = nullptr;
+            return 0;
+        }
+        
+        // Store the value
+        builder->CreateStore(val, variable);
+        
+        // Assignment expression returns the assigned value
+        lastValue = val;
+        return 0;
+    }
+    
+    // For other operators, evaluate both sides
     node.left->accept(*this);
     llvm::Value* L = lastValue;
     node.right->accept(*this);

@@ -21,6 +21,8 @@ class ASTPrinter : public ASTVisitor {
     long visit(ReturnStmtAST& node) override;
     long visit(PrintStmtAST& node) override;
     long visit(IfStmtAST& node) override;
+    long visit(WhileStmtAST& node) override;
+    long visit(ForStmtAST& node) override;
     long visit(NumberExprAST& node) override;
     long visit(VariableExprAST& node) override;
     long visit(CallExprAST& node) override;

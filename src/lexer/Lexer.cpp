@@ -205,7 +205,7 @@ Token Lexer::string() {
 }
 
 Token Lexer::character() {
-    size_t start = currentPos - 1;
+    size_t start = currentPos;
     
     if (peek() == '\'') {
         // Empty char literal? '' -> usually invalid or null char
@@ -225,7 +225,7 @@ Token Lexer::character() {
 
     advance(); // closing '
 
-    std::string value = sourcecode.substr(start, currentPos - start);
+    std::string value = sourcecode.substr(start, currentPos - start - 1);
     return makeToken(Tokentype::CHAR_LITERAL, value);
 }
 
@@ -255,6 +255,10 @@ Token Lexer::identifier() {
         return makeToken(Tokentype::KW_IF, idLexeme);
     } else if (idLexeme == "else") {
         return makeToken(Tokentype::KW_ELSE, idLexeme);
+    } else if (idLexeme == "while") {
+        return makeToken(Tokentype::KW_WHILE, idLexeme);
+    } else if (idLexeme == "for") {
+        return makeToken(Tokentype::KW_FOR, idLexeme);
     } else {
         return makeToken(Tokentype::IDENTIFIER, idLexeme);
     }
