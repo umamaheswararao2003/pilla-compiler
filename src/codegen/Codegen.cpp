@@ -504,7 +504,7 @@ long Codegen::visit(CallExprAST& node) {
         }
         
         // Add newline at the end
-        formatStr += "\n";
+        formatStr += "\\n";
         
         // Create global string constant for format
         llvm::Value* formatStrVal = builder->CreateGlobalStringPtr(formatStr);
