@@ -86,6 +86,28 @@ long Semantics::visit(PrintStmtAST& node) {
     return 0;
 }
 
+long Semantics::visit(IfStmtAST& node) {
+    // Analyze condition
+    node.condition->accept(*this);
+    
+    // Check condition is boolean-compatible (int for now)
+    if (node.condition->inferredType != Type::Int && node.condition->inferredType != Type::Float) {
+        error("If condition must be an integer or float");
+    }
+    
+    // Analyze then branch
+    for (const auto& stmt : node.thenBranch) {
+        stmt->accept(*this);
+    }
+    
+    // Analyze else branch if present
+    for (const auto& stmt : node.elseBranch) {
+        stmt->accept(*this);
+    }
+    
+    return 0;
+}
+
 long Semantics::visit(BinaryExprAST& node) {
     node.left->accept(*this);
     node.right->accept(*this);

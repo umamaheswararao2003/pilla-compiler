@@ -36,10 +36,61 @@ Token Lexer::scanToken() {
         case '}': return makeToken(Tokentype::RBRACE, "}");
         case ';': return makeToken(Tokentype::SEMICOLON, ";");
         case '+': return makeToken(Tokentype::PLUS, "+");
+        case '-': return makeToken(Tokentype::MINUS, "-");
+        case '*': return makeToken(Tokentype::MULTIPLY, "*");
+        case '/':
+            // Check for comments
+            if (peek() == '/') {
+                // Single-line comment, skip until end of line
+                while (peek() != '\n' && !isAtEnd()) {
+                    advance();
+                }
+                return scanToken(); // Skip this token and get the next one
+            } else if (peek() == '*') {
+                // Multi-line comment
+                advance(); // consume *
+                while (!isAtEnd()) {
+                    if (peek() == '*' && currentPos + 1 < sourcecode.length() && sourcecode[currentPos + 1] == '/') {
+                        advance(); // consume *
+                        advance(); // consume /
+                        break;
+                    }
+                    if (peek() == '\n') {
+                        line++;
+                        column = 0;
+                    }
+                    advance();
+                }
+                return scanToken(); // Skip this token and get the next one
+            }
+            return makeToken(Tokentype::DIVIDE, "/");
+        case '%': return makeToken(Tokentype::MODULO, "%");
         case '#': return makeToken(Tokentype::POUND, "#");
-        case '<': return makeToken(Tokentype::LESS_THAN, "<");
-        case '>': return makeToken(Tokentype::GRE_THAN, ">");
-        case '=': return makeToken(Tokentype::ASSIGN, "=");
+        case '<':
+            if (peek() == '=') {
+                advance();
+                return makeToken(Tokentype::LESS_EQUAL, "<=");
+            }
+            return makeToken(Tokentype::LESS_THAN, "<");
+        case '>':
+            if (peek() == '=') {
+                advance();
+                return makeToken(Tokentype::GREATER_EQUAL, ">=");
+            }
+            return makeToken(Tokentype::GRE_THAN, ">");
+        case '=':
+            if (peek() == '=') {
+                advance();
+                return makeToken(Tokentype::EQUAL_EQUAL, "==");
+            }
+            return makeToken(Tokentype::ASSIGN, "=");
+        case '!':
+            if (peek() == '=') {
+                advance();
+                return makeToken(Tokentype::NOT_EQUAL, "!=");
+            }
+            // For now, treat standalone ! as unknown
+            return makeToken(Tokentype::UNKNOWN, "!");
         case ',': return makeToken(Tokentype::COMMA, ",");
         case '"': return string();
         case '\'': return character();
@@ -200,6 +251,10 @@ Token Lexer::identifier() {
         return makeToken(Tokentype::KW_DOUBLE, idLexeme);
     } else if (idLexeme == "void") {
         return makeToken(Tokentype::KW_VOID, idLexeme);
+    } else if (idLexeme == "if") {
+        return makeToken(Tokentype::KW_IF, idLexeme);
+    } else if (idLexeme == "else") {
+        return makeToken(Tokentype::KW_ELSE, idLexeme);
     } else {
         return makeToken(Tokentype::IDENTIFIER, idLexeme);
     }

@@ -1,6 +1,8 @@
 #ifndef PILLA_CODEGEN_H
 #define PILLA_CODEGEN_H
 
+#include "passes/pass1.h"
+#include "passes/pass2.h"
 #include "parser/AST.h"
 #include "llvm/IR/Value.h"
 #include "llvm/IR/IRBuilder.h"
@@ -38,6 +40,7 @@ public:
     long visit(VariableDeclAST& node) override;
     long visit(ReturnStmtAST& node) override;
     long visit(PrintStmtAST& node) override;
+    long visit(IfStmtAST& node) override;
     long visit(NumberExprAST& node) override;
     long visit(VariableExprAST& node) override;
     long visit(CallExprAST& node) override;
@@ -53,12 +56,14 @@ private:
     std::unique_ptr<llvm::IRBuilder<>> builder;
 
     // New Pass Manager members
-    llvm::FunctionPassManager fpm;
     llvm::LoopAnalysisManager lam;
     llvm::FunctionAnalysisManager fam;
     llvm::CGSCCAnalysisManager cgam;
     llvm::ModuleAnalysisManager mam;
     llvm::PassBuilder pb;
+
+    llvm::FunctionPassManager fpm;
+    llvm::ModulePassManager mpm;
 
     std::map<std::string, llvm::Value*> namedValues;
     llvm::Value* lastValue = nullptr;

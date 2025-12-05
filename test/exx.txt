@@ -1,11 +1,11 @@
-char sum(char a, char b, char c) {
+int sum(int a, int b, int c) {
   return a + b + c;
 }
 
 int main() {
-    char a = 10;
-    char b = 4 + 16;
-    char c = sum(a, b, 'h');
-    printf("sum is %c", c);
+    int a = 10;
+    int b = 4 - 16;
+    int c = sum(a, b, 12);
+    printf("sum is %d", c);
     return 0;
 }

@@ -1,0 +1,37 @@
+// Test file for operator precedence
+// Verifies that * / % have higher precedence than + -
+
+int calculate(int x, int y) {
+    return x * 2 + y;
+}
+
+void main() {
+    // Test 1: 2 + 3 * 4 should be 14, not 20
+    int test1 = 2 + 3 * 4;
+    printf("%d", test1);
+    
+    // Test 2: 10 - 6 / 2 should be 7, not 2
+    int test2 = 10 - 6 / 2;
+    printf("%d", test2);
+    
+    // Test 3: 15 % 4 + 2 should be 5 (3 + 2)
+    int test3 = 15 % 4 + 2;
+    printf("%d", test3);
+    
+    // Test 4: 20 / 4 * 2 should be 10 (left to right)
+    int test4 = 20 / 4 * 2;
+    printf("%d", test4);
+    
+    // Test 5: 100 - 50 + 10 should be 60 (left to right)
+    int test5 = 100 - 50 + 10;
+    printf("%d", test5);
+    
+    // Test 6: Complex expression
+    // 5 + 3 * 2 - 8 / 4 = 5 + 6 - 2 = 9
+    int test6 = 5 + 3 * 2 - 8 / 4;
+    printf("%d", test6);
+    
+    // Test with function call
+    int result = calculate(5, 10);
+    printf("%d", result);
+}

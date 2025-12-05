@@ -1,0 +1,37 @@
+void main() {
+    // Test if-else with simple condition
+    int x = 10;
+    if (x > 5) {
+        printf("%d", 1);  // Should print 1
+    } else {
+        printf("%d", 0);
+    }
+    
+    // Test with comparison operators
+    int a = 20;
+    int b = 15;
+    
+    if (a == b) {
+        printf("%d", 100);
+    } else {
+        printf("%d", 200);  // Should print 200
+    }
+    
+    if (a != b) {
+        printf("%d", 300);  // Should print 300
+    } else {
+        printf("%d", 400);
+    }
+    
+    if (a >= b) {
+        printf("%d", 500);  // Should print 500
+    } else {
+        printf("%d", 600);
+    }
+    
+    if (b <= a) {
+        printf("%d", 700);  // Should print 700
+    } else {
+        printf("%d", 800);
+    }
+}

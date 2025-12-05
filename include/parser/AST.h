@@ -131,6 +131,23 @@ class PrintStmtAST : public StmtAST {
     long accept(ASTVisitor& visitor) override;
 };
 
+// if-else statement
+class IfStmtAST : public StmtAST {
+    public:
+    std::unique_ptr<ExprAST> condition;
+    std::vector<std::unique_ptr<StmtAST>> thenBranch;
+    std::vector<std::unique_ptr<StmtAST>> elseBranch;
+    
+    IfStmtAST(std::unique_ptr<ExprAST> cond, 
+              std::vector<std::unique_ptr<StmtAST>> thenB,
+              std::vector<std::unique_ptr<StmtAST>> elseB = {})
+        : condition(std::move(cond)), 
+          thenBranch(std::move(thenB)), 
+          elseBranch(std::move(elseB)) {}
+    
+    long accept(ASTVisitor& visitor) override;
+};
+
 class FunctionAST {
     public:
     std::string returnType;
@@ -166,6 +183,7 @@ class ASTVisitor {
     virtual long visit(VariableDeclAST& node) = 0;
     virtual long visit(ReturnStmtAST& node) = 0;
     virtual long visit(PrintStmtAST& node) = 0;
+    virtual long visit(IfStmtAST& node) = 0;
     virtual long visit(NumberExprAST& node) = 0;
     virtual long visit(VariableExprAST& node) = 0;
     virtual long visit(CallExprAST& node) = 0;
@@ -194,6 +212,10 @@ inline long ReturnStmtAST::accept(ASTVisitor& visitor) {
 }
 
 inline long PrintStmtAST::accept(ASTVisitor& visitor) {
+    return visitor.visit(*this);
+}
+
+inline long IfStmtAST::accept(ASTVisitor& visitor) {
     return visitor.visit(*this);
 }
 

@@ -38,14 +38,21 @@ class Parser {
     // parse expression statement
     std::unique_ptr<StmtAST> parsePrintStatement();
 
+    // parse if statement
+    std::unique_ptr<IfStmtAST> parseIfStatement();
+
     // parse an expression
     std::unique_ptr<ExprAST> parseExpression();
 
-    // parse an additive expression
-    std::unique_ptr<ExprAST> parseAdditiveExpression();
+    // parse binary expressions with precedence climbing
+    std::unique_ptr<ExprAST> parseBinaryExpression(int minPrecedence);
 
     // parse primary expression 
     std::unique_ptr<ExprAST> parsePrimary();
+
+    // Helper functions for operator precedence
+    int getOperatorPrecedence(Tokentype op);
+    bool isBinaryOperator(Tokentype type);
 
     // parse type
     std::string parseType();

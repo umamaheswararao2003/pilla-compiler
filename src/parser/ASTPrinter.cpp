@@ -86,10 +86,56 @@ long ASTPrinter::visit(PrintStmtAST& node) {
     return 0;
 }
 
+long ASTPrinter::visit(IfStmtAST& node) {
+    printNode("IfStmt");
+    
+    // Print condition
+    increaseIndent(false);
+    printNode("Condition");
+    increaseIndent(true);
+    node.condition->accept(*this);
+    decreaseIndent();
+    decreaseIndent();
+    
+    // Print then branch
+    increaseIndent(false);
+    printNode("Then");
+    for (size_t i = 0; i < node.thenBranch.size(); ++i) {
+        increaseIndent(i == node.thenBranch.size() - 1);
+        node.thenBranch[i]->accept(*this);
+        decreaseIndent();
+    }
+    decreaseIndent();
+    
+    // Print else branch if present
+    if (!node.elseBranch.empty()) {
+        increaseIndent(true);
+        printNode("Else");
+        for (size_t i = 0; i < node.elseBranch.size(); ++i) {
+            increaseIndent(i == node.elseBranch.size() - 1);
+            node.elseBranch[i]->accept(*this);
+            decreaseIndent();
+        }
+        decreaseIndent();
+    }
+    
+    return 0;
+}
+
 long ASTPrinter::visit(BinaryExprAST& node) {
     std::string opStr;
     switch (node.op) {
         case Tokentype::PLUS: opStr = "PLUS"; break;
+        case Tokentype::MINUS: opStr = "MINUS"; break;
+        case Tokentype::MULTIPLY: opStr = "MUL"; break;
+        case Tokentype::DIVIDE: opStr = "DIV"; break;
+        case Tokentype::MODULO: opStr = "MOD"; break;
+        case Tokentype::ASSIGN: opStr = "ASSIGN"; break;
+        case Tokentype::NOT_EQUAL: opStr = "NEQ"; break;
+        case Tokentype::LESS_THAN: opStr = "LT"; break;
+        case Tokentype::GRE_THAN: opStr = "GT"; break;
+        case Tokentype::LESS_EQUAL: opStr = "LTE"; break;
+        case Tokentype::GREATER_EQUAL: opStr = "GTE"; break;
         default: opStr = "UNKNOWN"; break;
     }
     printNode("BinaryOp", opStr);

@@ -1,0 +1,40 @@
+void main() {
+    int x = 10;
+    int y = 20;
+    
+    // Nested if-else
+    if (x < y) {
+        if (x > 5) {
+            printf("%d", 1);  // Should print 1
+        } else {
+            printf("%d", 2);
+        }
+    } else {
+        printf("%d", 3);
+    }
+    
+    // Test all comparison operators
+    if (5 < 10) {
+        printf("%d", 100);  // Should print 100
+    }
+    
+    if (10 > 5) {
+        printf("%d", 200);  // Should print 200
+    }
+    
+    if (5 <= 5) {
+        printf("%d", 300);  // Should print 300
+    }
+    
+    if (10 >= 10) {
+        printf("%d", 400);  // Should print 400
+    }
+    
+    if (7 == 7) {
+        printf("%d", 500);  // Should print 500
+    }
+    
+    if (7 != 8) {
+        printf("%d", 600);  // Should print 600
+    }
+}

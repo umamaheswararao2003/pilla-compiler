@@ -1,0 +1,45 @@
+// Test file for binary operations in pilla compiler
+// Tests: addition, subtraction, multiplication, division, modulo
+// Tests: operator precedence
+// Tests: mixed type operations (int and float)
+
+void main() {
+    // Basic addition
+    int a = 10 + 5;
+    printf("%d", a);
+    
+    // Basic subtraction
+    int b = 20 - 8;
+    printf("%d", b);
+    
+    // Basic multiplication
+    int c = 6 * 7;
+    printf("%d", c);
+    
+    // Basic division
+    int d = 100 / 4;
+    printf("%d", d);
+    
+    // Basic modulo
+    int e = 17 % 5;
+    printf("%d", e);
+    
+    // Operator precedence: multiplication before addition
+    int f = 2 + 3 * 4;
+    printf("%d", f);
+    
+    // Operator precedence: division before subtraction
+    int g = 20 - 10 / 2;
+    printf("%d", g);
+    
+    // Complex expression
+    int h = 5 + 3 * 2 - 8 / 4;
+    printf("%d", h);
+    
+    // Multiple operations
+    int i = 100 - 20 + 5;
+    printf("%d", i);
+    
+    int j = 2 * 3 * 4;
+    printf("%d", j);
+}

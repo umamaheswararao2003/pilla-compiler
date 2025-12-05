@@ -26,6 +26,8 @@ add_executable(pilla-compiler
     src/sema/Sema.cpp
     src/parser/ASTPrinter.cpp
     src/codegen/Codegen.cpp
+    src/passes/pass1.cpp
+    src/passes/pass2.cpp
 )
 
 # Tell CMake to look for header files in the 'include' directory

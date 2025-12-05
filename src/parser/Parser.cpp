@@ -61,6 +61,10 @@ std::unique_ptr<StmtAST> Parser::parseStatement() {
     if (peek().type == Tokentype::KW_RETURN) {
         return parseReturnStatement();
     }
+    // if statement
+    if (peek().type == Tokentype::KW_IF) {
+        return parseIfStatement();
+    }
     // Fallback to expression statement
     return parsePrintStatement();
 }
@@ -89,24 +93,90 @@ std::unique_ptr<ReturnStmtAST> Parser::parseReturnStatement() {
     return std::make_unique<ReturnStmtAST>(std::move(expression));
 }
 
-// base for parsing expressions
-std::unique_ptr<ExprAST> Parser::parseExpression(){
-    // for now only operator
-    return parseAdditiveExpression();
+std::unique_ptr<IfStmtAST> Parser::parseIfStatement() {
+    consume(Tokentype::KW_IF, "Expected 'if'");
+    consume(Tokentype::LPAR, "Expected '(' after 'if'");
+    auto condition = parseExpression();
+    consume(Tokentype::RPAR, "Expected ')' after condition");
+    
+    consume(Tokentype::LBRACE, "Expected '{' after if condition");
+    std::vector<std::unique_ptr<StmtAST>> thenBranch;
+    while (!match(Tokentype::RBRACE) && !isAtEnd()) {
+        thenBranch.push_back(parseStatement());
+    }
+    
+    std::vector<std::unique_ptr<StmtAST>> elseBranch;
+    if (match(Tokentype::KW_ELSE)) {
+        consume(Tokentype::LBRACE, "Expected '{' after 'else'");
+        while (!match(Tokentype::RBRACE) && !isAtEnd()) {
+            elseBranch.push_back(parseStatement());
+        }
+    }
+    
+    return std::make_unique<IfStmtAST>(
+        std::move(condition), 
+        std::move(thenBranch), 
+        std::move(elseBranch)
+    );
 }
 
-std::unique_ptr<ExprAST> Parser::parseAdditiveExpression() {
+// Helper function to get operator precedence
+// Higher number = higher precedence
+int Parser::getOperatorPrecedence(Tokentype op) {
+    switch (op) {
+        case Tokentype::MULTIPLY:
+        case Tokentype::DIVIDE:
+        case Tokentype::MODULO:
+            return 3;  // Highest precedence
+        case Tokentype::PLUS:
+        case Tokentype::MINUS:
+            return 2;  // Medium precedence
+        case Tokentype::EQUAL_EQUAL:
+        case Tokentype::NOT_EQUAL:
+        case Tokentype::LESS_THAN:
+        case Tokentype::GRE_THAN:
+        case Tokentype::LESS_EQUAL:
+        case Tokentype::GREATER_EQUAL:
+            return 1;  // Lower precedence (comparison)
+        default:
+            return 0;  // Not a binary operator
+    }
+}
+
+// Helper function to check if token is a binary operator
+bool Parser::isBinaryOperator(Tokentype type) {
+    return getOperatorPrecedence(type) > 0;
+}
+
+// base for parsing expressions
+std::unique_ptr<ExprAST> Parser::parseExpression(){
+    return parseBinaryExpression(0);
+}
+
+// Unified binary expression parser using precedence climbing
+std::unique_ptr<ExprAST> Parser::parseBinaryExpression(int minPrecedence) {
     auto left = parsePrimary();
-
-    // check for + operator
-    while (match(Tokentype::PLUS)) {
-        Token op = previous();
-        auto right = parsePrimary();
-
-        // binary expression node
+    
+    while (!isAtEnd() && isBinaryOperator(peek().type)) {
+        Tokentype opType = peek().type;
+        int precedence = getOperatorPrecedence(opType);
+        
+        // If this operator has lower precedence than minimum, stop
+        if (precedence < minPrecedence) {
+            break;
+        }
+        
+        // Consume the operator
+        Token op = peek();
+        current++;
+        
+        // Parse right side with higher precedence (for left-associativity)
+        auto right = parseBinaryExpression(precedence + 1);
+        
+        // Create binary expression node
         left = std::make_unique<BinaryExprAST>(op.type, std::move(left), std::move(right));
     }
-
+    
     return left;
 }
 

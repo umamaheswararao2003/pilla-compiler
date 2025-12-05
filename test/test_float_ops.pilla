@@ -1,0 +1,33 @@
+// Test file for float binary operations
+// Tests: all operators with floating point numbers
+// Tests: mixed int/float operations
+
+void main() {
+    // Float addition
+    float a = 10.5 + 5.3;
+    printf("%f", a);
+    
+    // Float subtraction
+    float b = 20.8 - 8.2;
+    printf("%f", b);
+    
+    // Float multiplication
+    float c = 6.5 * 2.0;
+    printf("%f", c);
+    
+    // Float division
+    float d = 100.0 / 4.0;
+    printf("%f", d);
+    
+    // Float modulo
+    float e = 17.5 % 5.0;
+    printf("%f", e);
+    
+    // Mixed int and float (should promote to float)
+    float f = 10 + 5.5;
+    printf("%f", f);
+    
+    // Complex mixed expression
+    float g = 2.5 * 4 + 10 / 2.0;
+    printf("%f", g);
+}

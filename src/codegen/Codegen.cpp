@@ -22,10 +22,9 @@ Codegen::Codegen() {
     pb.registerLoopAnalyses(lam);
     pb.crossRegisterProxies(lam, fam, cgam, mam);
 
-    // Register TargetLibraryInfoAnalysis
-    // fam.registerPass([&] { return llvm::TargetLibraryInfoAnalysis(llvm::TargetLibraryInfoImpl()); });
-
     // Add passes
+    mpm.addPass(createModuleToFunctionPassAdaptor(llvm::UnusedArgElimPass()));
+    mpm.addPass(createModuleToFunctionPassAdaptor(llvm::AddCounterPass()));
     // Promote allocas to registers
     fpm.addPass(llvm::PromotePass());
     // Peephole optimizations
@@ -36,6 +35,10 @@ Codegen::Codegen() {
     fpm.addPass(llvm::GVNPass());
     // Simplify control flow
     fpm.addPass(llvm::SimplifyCFGPass());
+
+    // pilla passes
+    
+
 }
 
 void Codegen::generate(ProgramAST& program) {
@@ -165,6 +168,9 @@ long Codegen::visit(ProgramAST& node) {
     for (auto& func : node.functions) {
         func->accept(*this);
     }
+
+    mpm.run(*module, mam);
+    
     return 0;
 }
 
@@ -253,6 +259,67 @@ long Codegen::visit(PrintStmtAST& node) {
     return 0;
 }
 
+long Codegen::visit(IfStmtAST& node) {
+    // Evaluate condition
+    node.condition->accept(*this);
+    llvm::Value* condValue = lastValue;
+    
+    // Convert to boolean (compare with 0)
+    llvm::Value* condBool;
+    if (condValue->getType()->isDoubleTy()) {
+        // For float: compare != 0.0
+        condBool = builder->CreateFCmpONE(
+            condValue,
+            llvm::ConstantFP::get(*context, llvm::APFloat(0.0)),
+            "ifcond"
+        );
+    } else {
+        // For int: compare != 0
+        condBool = builder->CreateICmpNE(
+            condValue,
+            llvm::ConstantInt::get(*context, llvm::APInt(64, 0)),
+            "ifcond"
+        );
+    }
+    
+    llvm::Function* function = builder->GetInsertBlock()->getParent();
+    
+    // Create basic blocks
+    llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(*context, "then", function);
+    llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(*context, "else");
+    llvm::BasicBlock* mergeBB = llvm::BasicBlock::Create(*context, "ifcont");
+    
+    // Branch based on condition
+    builder->CreateCondBr(condBool, thenBB, elseBB);
+    
+    // Emit then block
+    builder->SetInsertPoint(thenBB);
+    for (auto& stmt : node.thenBranch) {
+        stmt->accept(*this);
+    }
+    // Only add branch if block doesn't already have terminator
+    if (!builder->GetInsertBlock()->getTerminator()) {
+        builder->CreateBr(mergeBB);
+    }
+    
+    // Emit else block
+    function->insert(function->end(), elseBB);
+    builder->SetInsertPoint(elseBB);
+    for (auto& stmt : node.elseBranch) {
+        stmt->accept(*this);
+    }
+    // Only add branch if block doesn't already have terminator
+    if (!builder->GetInsertBlock()->getTerminator()) {
+        builder->CreateBr(mergeBB);
+    }
+    
+    // Emit merge block
+    function->insert(function->end(), mergeBB);
+    builder->SetInsertPoint(mergeBB);
+    
+    return 0;
+}
+
 long Codegen::visit(NumberExprAST& node) {
     lastValue = llvm::ConstantInt::get(*context, llvm::APInt(64, node.value));
     return 0;
@@ -335,13 +402,50 @@ long Codegen::visit(BinaryExprAST& node) {
     bool isFloat = L->getType()->isDoubleTy() || R->getType()->isDoubleTy();
     
     if (isFloat) {
-        // Cast 
+        // Cast to double if needed
         if (!L->getType()->isDoubleTy()) L = builder->CreateSIToFP(L, llvm::Type::getDoubleTy(*context), "casttmp");
         if (!R->getType()->isDoubleTy()) R = builder->CreateSIToFP(R, llvm::Type::getDoubleTy(*context), "casttmp");
         
         switch (node.op) {
             case Tokentype::PLUS:
                 lastValue = builder->CreateFAdd(L, R, "addtmp");
+                break;
+            case Tokentype::MINUS:
+                lastValue = builder->CreateFSub(L, R, "subtmp");
+                break;
+            case Tokentype::MULTIPLY:
+                lastValue = builder->CreateFMul(L, R, "multmp");
+                break;
+            case Tokentype::DIVIDE:
+                lastValue = builder->CreateFDiv(L, R, "divtmp");
+                break;
+            case Tokentype::MODULO:
+                lastValue = builder->CreateFRem(L, R, "modtmp");
+                break;
+            case Tokentype::LESS_THAN:
+                lastValue = builder->CreateFCmpULT(L, R, "cmptmp");
+                // Convert bool to int (0 or 1)
+                lastValue = builder->CreateUIToFP(lastValue, llvm::Type::getDoubleTy(*context), "booltmp");
+                break;
+            case Tokentype::GRE_THAN:
+                lastValue = builder->CreateFCmpUGT(L, R, "cmptmp");
+                lastValue = builder->CreateUIToFP(lastValue, llvm::Type::getDoubleTy(*context), "booltmp");
+                break;
+            case Tokentype::LESS_EQUAL:
+                lastValue = builder->CreateFCmpULE(L, R, "cmptmp");
+                lastValue = builder->CreateUIToFP(lastValue, llvm::Type::getDoubleTy(*context), "booltmp");
+                break;
+            case Tokentype::GREATER_EQUAL:
+                lastValue = builder->CreateFCmpUGE(L, R, "cmptmp");
+                lastValue = builder->CreateUIToFP(lastValue, llvm::Type::getDoubleTy(*context), "booltmp");
+                break;
+            case Tokentype::EQUAL_EQUAL:
+                lastValue = builder->CreateFCmpUEQ(L, R, "cmptmp");
+                lastValue = builder->CreateUIToFP(lastValue, llvm::Type::getDoubleTy(*context), "booltmp");
+                break;
+            case Tokentype::NOT_EQUAL:
+                lastValue = builder->CreateFCmpUNE(L, R, "cmptmp");
+                lastValue = builder->CreateUIToFP(lastValue, llvm::Type::getDoubleTy(*context), "booltmp");
                 break;
             default:
                 logError("invalid binary operator");
@@ -352,6 +456,43 @@ long Codegen::visit(BinaryExprAST& node) {
         switch (node.op) {
             case Tokentype::PLUS:
                 lastValue = builder->CreateAdd(L, R, "addtmp");
+                break;
+            case Tokentype::MINUS:
+                lastValue = builder->CreateSub(L, R, "subtmp");
+                break;
+            case Tokentype::MULTIPLY:
+                lastValue = builder->CreateMul(L, R, "multmp");
+                break;
+            case Tokentype::DIVIDE:
+                lastValue = builder->CreateSDiv(L, R, "divtmp");
+                break;
+            case Tokentype::MODULO:
+                lastValue = builder->CreateSRem(L, R, "modtmp");
+                break;
+            case Tokentype::LESS_THAN:
+                lastValue = builder->CreateICmpSLT(L, R, "cmptmp");
+                // Convert bool (i1) to int (i64)
+                lastValue = builder->CreateZExt(lastValue, llvm::Type::getInt64Ty(*context), "booltmp");
+                break;
+            case Tokentype::GRE_THAN:
+                lastValue = builder->CreateICmpSGT(L, R, "cmptmp");
+                lastValue = builder->CreateZExt(lastValue, llvm::Type::getInt64Ty(*context), "booltmp");
+                break;
+            case Tokentype::LESS_EQUAL:
+                lastValue = builder->CreateICmpSLE(L, R, "cmptmp");
+                lastValue = builder->CreateZExt(lastValue, llvm::Type::getInt64Ty(*context), "booltmp");
+                break;
+            case Tokentype::GREATER_EQUAL:
+                lastValue = builder->CreateICmpSGE(L, R, "cmptmp");
+                lastValue = builder->CreateZExt(lastValue, llvm::Type::getInt64Ty(*context), "booltmp");
+                break;
+            case Tokentype::EQUAL_EQUAL:
+                lastValue = builder->CreateICmpEQ(L, R, "cmptmp");
+                lastValue = builder->CreateZExt(lastValue, llvm::Type::getInt64Ty(*context), "booltmp");
+                break;
+            case Tokentype::NOT_EQUAL:
+                lastValue = builder->CreateICmpNE(L, R, "cmptmp");
+                lastValue = builder->CreateZExt(lastValue, llvm::Type::getInt64Ty(*context), "booltmp");
                 break;
             default:
                 logError("invalid binary operator");
